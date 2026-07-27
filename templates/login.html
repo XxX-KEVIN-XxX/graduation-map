@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>毕业地图 · 登录</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #f5efe6;
+            font-family: "Songti SC", "SimSun", "Microsoft YaHei", serif;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-image: radial-gradient(#e8dccc 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        .login-card {
+            width: 400px;
+            padding: 50px 40px;
+            background: #fffdf8;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(139, 119, 91, 0.15);
+            border: 1px solid #e8dccc;
+        }
+        .title {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .title h1 {
+            font-size: 28px;
+            color: #5a4a35;
+            font-weight: 500;
+            letter-spacing: 4px;
+            margin-bottom: 8px;
+        }
+        .title p {
+            font-size: 13px;
+            color: #998670;
+            letter-spacing: 2px;
+        }
+        .form-item {
+            margin-bottom: 22px;
+        }
+        .form-item label {
+            display: block;
+            font-size: 14px;
+            color: #7a6a55;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+        .form-item input {
+            width: 100%;
+            height: 44px;
+            padding: 0 14px;
+            border: 1px solid #d9cbb8;
+            border-radius: 6px;
+            background: #faf7f2;
+            font-size: 14px;
+            color: #5a4a35;
+            outline: none;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+        .form-item input:focus {
+            border-color: #b89770;
+            background: #fff;
+        }
+        .login-btn {
+            width: 100%;
+            height: 46px;
+            margin-top: 10px;
+            background: #8b6f4e;
+            color: #fffdf8;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            letter-spacing: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-family: inherit;
+        }
+        .login-btn:hover {
+            background: #7a5f40;
+        }
+        .tip {
+            margin-top: 24px;
+            text-align: center;
+            font-size: 12px;
+            color: #b09e88;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="title">
+            <h1>在地球上见</h1>
+            <p>GRADUATION MAP</p>
+        </div>
+
+        <div class="form-item">
+            <label>账号</label>
+            <input type="text" id="username" placeholder="请输入账号" value="admin">
+        </div>
+
+        <div class="form-item">
+            <label>密码</label>
+            <input type="password" id="password" placeholder="请输入密码" value="123456">
+        </div>
+
+        <button class="login-btn" onclick="handleLogin()">登 录</button>
+
+        <div class="tip">本网站由帅逼倾力打造</div>
+    </div>
+
+    <script>
+        function handleLogin() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+
+            if (!username || !password) {
+                alert('请输入账号和密码');
+                return;
+            }
+
+            fetch('/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.code === 200) {
+                    localStorage.setItem('currentUser', JSON.stringify(data.data));
+                    window.location.href = '/index';
+                } else {
+                    alert(data.msg);
+                }
+            })
+            .catch(() => alert('登录失败，请检查后端服务是否启动'));
+        }
+
+        document.getElementById('password').addEventListener('keydown', e => {
+            if (e.key === 'Enter') handleLogin();
+        });
+    </script>
+</body>
+</html>
