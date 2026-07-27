@@ -818,10 +818,10 @@
             initWorldMap();
         };
 
-        // ========== 1. 世界地图（仅悬停显示国家名称） ==========
+        // ========== 1. 世界地图（本地路径） ==========
         function initWorldMap() {
             showLoading();
-            fetch('/static/world.json')
+            fetch('static/maps/world.json')
                 .then(res => res.json())
                 .then(worldJson => {
                     echarts.registerMap('world', worldJson);
@@ -831,7 +831,7 @@
                     bindWorldClick();
                 })
                 .catch(() => {
-                    document.getElementById('mapLoading').textContent = '世界地图加载失败，请检查static文件夹';
+                    document.getElementById('mapLoading').textContent = '世界地图加载失败，请检查 static/maps/world.json 是否存在';
                 });
         }
 
@@ -867,7 +867,7 @@
                             show: true,
                             color: '#5a4a35',
                             fontSize: 12,
-                            fontWeight: 500
+                            fontWeight: 50
                         }
                     }
                 },
@@ -899,10 +899,10 @@
             });
         }
 
-        // ========== 2. 中国省级地图 ==========
+        // ========== 2. 中国省级地图（本地路径） ==========
         function loadChinaMap() {
             showLoading();
-            fetch('https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json')
+            fetch('static/maps/100000_full.json')
                 .then(res => res.json())
                 .then(geoJson => {
                     currentGeoJson = geoJson;
@@ -913,7 +913,7 @@
                 })
                 .catch(() => {
                     hideLoading();
-                    alert('中国地图加载失败，请检查网络');
+                    alert('中国地图加载失败，请检查 static/maps/100000_full.json 是否存在');
                 });
         }
 
@@ -967,13 +967,13 @@
             });
         }
 
-        // ========== 3. 省级（市级）地图 ==========
+        // ========== 3. 省级（市级）地图（本地路径） ==========
         function loadProvinceMap(adcode, name) {
             currentProvinceName = name || '';
             currentCityName = '';
             showLoading();
 
-            fetch(`https://geo.datav.aliyun.com/areas_v3/bound/${adcode}_full.json`)
+            fetch(`static/maps/${adcode}_full.json`)
                 .then(res => res.json())
                 .then(geoJson => {
                     currentGeoJson = geoJson;
@@ -984,7 +984,7 @@
                 })
                 .catch(() => {
                     hideLoading();
-                    alert('省级地图加载失败，请检查网络');
+                    alert(`省级地图加载失败，请检查 static/maps/${adcode}_full.json 是否存在`);
                 });
         }
 
@@ -1035,12 +1035,12 @@
             });
         }
 
-        // ========== 4. 区县级地图 ==========
+        // ========== 4. 区县级地图（本地路径） ==========
         function loadCityMap(adcode, name) {
             currentCityName = name || '';
             showLoading();
 
-            fetch(`https://geo.datav.aliyun.com/areas_v3/bound/${adcode}_full.json`)
+            fetch(`static/maps/${adcode}_full.json`)
                 .then(res => res.json())
                 .then(geoJson => {
                     currentGeoJson = geoJson;
@@ -1050,7 +1050,7 @@
                 })
                 .catch(() => {
                     hideLoading();
-                    alert('市级地图加载失败，请检查网络');
+                    alert(`市级地图加载失败，请检查 static/maps/${adcode}_full.json 是否存在`);
                 });
         }
 
@@ -1300,7 +1300,7 @@
                 }
             })
             .catch(err => {
-                alert('保存失败，请检查网络或接口');
+                alert('保存失败，请检查接口或本地服务');
                 console.error(err);
             });
         }
