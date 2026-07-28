@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>毕业地图 · 用户管理</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #f5efe6;
+            font-family: "Songti SC", "SimSun", "Microsoft YaHei", serif;
+            min-height: 100vh;
+            padding: 60px 20px;
+            background-image: radial-gradient(#e8dccc 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #fffdf8;
+            border-radius: 12px;
+            box-shadow: 0 8px 30px rgba(139, 119, 91, 0.15);
+            border: 1px solid #e8dccc;
+            padding: 40px 50px;
+        }
+        .header {
+            margin-bottom: 30px;
+            border-bottom: 1px solid #e8dccc;
+            padding-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .header h1 {
+            font-size: 26px;
+            color: #5a4a35;
+            font-weight: 500;
+            letter-spacing: 3px;
+        }
+        .header .tip {
+            font-size: 12px;
+            color: #998670;
+            letter-spacing: 1px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            color: #5a4a35;
+        }
+        th, td {
+            padding: 14px 20px;
+            text-align: left;
+            border-bottom: 1px solid #f0e6d6;
+            font-size: 14px;
+        }
+        th {
+            background: #faf7f2;
+            font-weight: 500;
+            color: #7a6a55;
+            letter-spacing: 1px;
+        }
+        tr:hover {
+            background: #faf7f2;
+        }
+        .empty {
+            text-align: center;
+            padding: 60px 0;
+            color: #b09e88;
+            font-size: 14px;
+        }
+        .back-link {
+            margin-top: 30px;
+            text-align: right;
+            font-size: 12px;
+        }
+        .back-link a {
+            color: #8b6f4e;
+            text-decoration: none;
+        }
+        .back-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>普通用户列表</h1>
+            <span class="tip">仅查看权限 · 不可修改密码</span>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th width="100">ID</th>
+                    <th>账号</th>
+                    <th>登录密码</th>
+                </tr>
+            </thead>
+            <tbody id="userTable">
+                <!-- 动态渲染 -->
+            </tbody>
+        </table>
+
+        <div class="back-link">
+            <a href="/index">← 返回地图首页</a>
+        </div>
+    </div>
+
+    <script>
+        // 权限校验：未登录或非管理员直接跳转
+        const user = JSON.parse(localStorage.getItem('currentUser') || '{}');
+        if (!user.username || user.role !== 'admin') {
+            alert('无权限访问该页面');
+            window.location.href = '/index';
+        }
+
+        // 加载用户列表
+        function loadUsers() {
+            fetch('/api/admin/users', {
+                method: 'GET',
+                credentials: 'include',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(res => res.json())
+            .then(data => {
+                const tbody = document.getElementById('userTable');
+                if (data.code !== 200) {
+                    tbody.innerHTML = `<tr><td colspan="3" class="empty">${data.msg}</td></tr>`;
+                    return;
+                }
+
+                const list = data.data;
+                if (list.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="3" class="empty">暂无普通用户</td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = list.map(u => `
+                    <tr>
+                        <td>${u.id}</td>
+                        <td>${u.username}</td>
+                        <td>${u.password}</td>
+                    </tr>
+                `).join('');
+            })
+            .catch(() => {
+                document.getElementById('userTable').innerHTML =
+                    '<tr><td colspan="3" class="empty">加载失败，请检查后端服务</td></tr>';
+            });
+        }
+
+        loadUsers();
+    </script>
+</body>
+</html>
