@@ -31,9 +31,9 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 # ========== 数据库配置（自动适配线上/本地）==========
 # 优先读取Render注入的环境变量，本地默认用SQLite
 DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///./data/users.db")
-# 兼容Render的postgres协议前缀，同时指定使用psycopg3驱动
+# 兼容Render的postgres协议前缀，同时指定使用psycopg2（psycopg v2）驱动
 if DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg2://", 1)
 
 # 创建数据库引擎
 engine = create_engine(
