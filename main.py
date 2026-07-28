@@ -81,7 +81,7 @@ def init_default_admin():
         default_admin = UserDB(
             username="xuekecheng",
             password="123456",
-            name="管理员",
+            name="薛可成",
             role="admin"
         )
         db.add(default_admin)
