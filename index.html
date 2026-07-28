@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>毕业地图 · 在地球上见</title>
+    <script src="https://cdn.bootcdn.net/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #f5efe6;
+            font-family: "Songti SC", "SimSun", "Microsoft YaHei", serif;
+            color: #5a4a35;
+            height: 100vh;
+            overflow: hidden;
+        }
+        /* 顶部标题栏 */
+        .header {
+            height: 90px;
+            padding: 0 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #fffdf8;
+            border-bottom: 1px solid #e8dccc;
+        }
+        .header-left h2 {
+            font-size: 22px;
+            font-weight: 500;
+            letter-spacing: 2px;
+            margin-bottom: 4px;
+        }
+        .header-left p {
+            font-size: 13px;
+            color: #998670;
+        }
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            font-size: 14px;
+        }
+        .user-info {
+            color: #7a6a55;
+        }
+        .logout-btn {
+            padding: 6px 16px;
+            border: 1px solid #c7b59a;
+            border-radius: 4px;
+            background: transparent;
+            color: #8b6f4e;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+        .logout-btn:hover {
+            background: #8b6f4e;
+            color: #fff;
+        }
+
+        /* 主体区域 */
+        .main {
+            display: flex;
+            height: calc(100vh - 90px);
+        }
+        /* 地图区域 */
+        .map-container {
+            flex: 1;
+            position: relative;
+            background: #f5efe6;
+        }
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+        .map-back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 8px 16px;
+            background: #fffdf8;
+            border: 1px solid #e8dccc;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 13px;
+            color: #7a6a55;
+            display: none;
+            font-family: inherit;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            z-index: 10;
+        }
+        .map-loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #998670;
+            font-size: 14px;
+            z-index: 9;
+            background: rgba(255,253,248,0.9);
+            padding: 10px 20px;
+            border-radius: 4px;
+            border: 1px solid #e8dccc;
+            display: none;
+        }
+        .map-stats {
+            position: absolute;
+            bottom: 30px;
+            left: 40px;
+        }
+        .map-stats .en {
+            font-size: 13px;
+            color: #998670;
+            letter-spacing: 2px;
+            margin-bottom: 6px;
+        }
+        .map-stats .cn {
+            font-size: 32px;
+            font-weight: 500;
+            letter-spacing: 4px;
+        }
+        .map-stats .count {
+            position: absolute;
+            right: -80px;
+            bottom: 8px;
+            font-size: 20px;
+            color: #c0504d;
+        }
+
+        /* 右侧侧边栏 */
+        .sidebar {
+            width: 340px;
+            background: #fffdf8;
+            border-left: 1px solid #e8dccc;
+            padding: 24px;
+            overflow-y: auto;
+        }
+        .tab-bar {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #e8dccc;
+            padding-bottom: 12px;
+        }
+        .tab-item {
+            flex: 1;
+            text-align: center;
+            padding: 8px 0;
+            font-size: 13px;
+            cursor: pointer;
+            border-radius: 4px;
+            color: #998670;
+            transition: all 0.2s;
+        }
+        .tab-item.active {
+            background: #f0e6d6;
+            color: #8b6f4e;
+        }
+        .admin-tab {
+            display: none;
+        }
+
+        /* 搜索框 */
+        .search-box {
+            margin-bottom: 16px;
+        }
+        .search-box input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #d9cbb8;
+            border-radius: 4px;
+            background: #faf7f2;
+            font-size: 13px;
+            color: #5a4a35;
+            outline: none;
+            font-family: inherit;
+        }
+        .search-box input:focus {
+            border-color: #c7b59a;
+        }
+
+        /* 同学列表 */
+        .classmates-list {
+            margin-top: 10px;
+        }
+        .classmate-item {
+            padding: 12px;
+            border: 1px solid #e8dccc;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            background: #faf7f2;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .classmate-item:hover {
+            background: #f0e6d6;
+            border-color: #c7b59a;
+        }
+        .classmate-name {
+            font-size: 15px;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+        .classmate-loc {
+            font-size: 12px;
+            color: #998670;
+            margin-bottom: 6px;
+        }
+        .classmate-msg {
+            font-size: 12px;
+            color: #7a6a55;
+            line-height: 1.4;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            color: #7a6a55;
+            margin-bottom: 6px;
+        }
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 8px 10px;
+            border: 1px solid #d9cbb8;
+            border-radius: 4px;
+            background: #faf7f2;
+            font-size: 13px;
+            color: #5a4a35;
+            outline: none;
+            font-family: inherit;
+        }
+        .form-group textarea {
+            resize: vertical;
+            min-height: 60px;
+        }
+        .save-btn {
+            width: 100%;
+            padding: 10px;
+            background: #8b6f4e;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            letter-spacing: 2px;
+            font-family: inherit;
+            margin-top: 8px;
+        }
+        .save-btn:hover {
+            background: #7a5f40;
+        }
+        .cancel-btn {
+            width: 100%;
+            padding: 10px;
+            background: transparent;
+            color: #8b6f4e;
+            border: 1px solid #c7b59a;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            letter-spacing: 2px;
+            font-family: inherit;
+            margin-top: 8px;
+        }
+        .cancel-btn:hover {
+            background: #f0e6d6;
+        }
+
+        /* 用户管理列表 */
+        .user-list {
+            margin-top: 10px;
+        }
+        .user-item {
+            padding: 12px;
+            border: 1px solid #e8dccc;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            background: #faf7f2;
+        }
+        .user-item .name-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 6px;
+        }
+        .user-item .name {
+            font-size: 15px;
+            font-weight: 500;
+        }
+        .user-item .role {
+            font-size: 12px;
+            padding: 2px 6px;
+            border-radius: 3px;
+            background: #e8dccc;
+            color: #8b6f4e;
+        }
+        .user-item .loc {
+            font-size: 12px;
+            color: #998670;
+            margin-bottom: 8px;
+        }
+        .user-item .ops {
+            display: flex;
+            gap: 8px;
+        }
+        .user-item button {
+            flex: 1;
+            padding: 4px 0;
+            font-size: 12px;
+            border: 1px solid #c7b59a;
+            background: transparent;
+            border-radius: 3px;
+            cursor: pointer;
+            color: #7a6a55;
+            font-family: inherit;
+        }
+        .user-item button:hover {
+            background: #f0e6d6;
+        }
+        .add-user-btn {
+            width: 100%;
+            padding: 10px;
+            border: 1px dashed #c7b59a;
+            background: transparent;
+            color: #8b6f4e;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            margin-bottom: 16px;
+        }
+
+        /* 管理员编辑弹窗 */
+        .modal-mask {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.4);
+            display: none;
+            z-index: 9999;
+        }
+        .modal-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #fffdf8;
+            padding: 24px;
+            border-radius: 8px;
+            width: 420px;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            z-index: 10000;
+        }
+        .modal-title {
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 20px;
+            color: #5a4a35;
+            text-align: center;
+            letter-spacing: 2px;
+        }
+        .modal-btns {
+            display: flex;
+            gap: 12px;
+            margin-top: 8px;
+        }
+        .modal-btns button {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+    <!-- 顶部 -->
+    <div class="header">
+        <div class="header-left">
+            <h2>学军紫金港2025届4班 · 毕业地图</h2>
+            <p>班主任：王畅</p>
+        </div>
+        <div class="header-right">
+            <span class="user-info" id="currentUserName"></span>
+            <button class="logout-btn" onclick="logout()">退出登录</button>
+        </div>
+    </div>
+
+    <!-- 主体 -->
+    <div class="main">
+        <!-- 地图 -->
+        <div class="map-container">
+            <button class="map-back-btn" id="backBtn" onclick="goBack()">← 返回上一级</button>
+            <div class="map-loading" id="mapLoading">地图加载中...</div>
+            <div id="map"></div>
+            <div class="map-stats">
+                <div class="en">PEOPLE AROUND THE WORLD</div>
+                <div class="cn">在地球上遇见<span class="count" id="totalCount">0</span>各位</div>
+            </div>
+        </div>
+
+        <!-- 侧边栏 -->
+        <div class="sidebar">
+            <div class="tab-bar">
+                <div class="tab-item active" onclick="switchTab('classmates')">同学列表</div>
+                <div class="tab-item" onclick="switchTab('self')">我的信息</div>
+                <div class="tab-item admin-tab" id="adminTab" onclick="switchTab('admin')">用户管理</div>
+            </div>
+
+            <!-- 同学列表面板 -->
+            <div id="classmatesPanel">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="搜索同学姓名..." oninput="filterClassmates(this.value)">
+                </div>
+                <div class="classmates-list" id="classmatesList"></div>
+            </div>
+
+            <!-- 个人信息面板 -->
+            <div id="selfPanel" style="display:none;">
+                <div class="form-group">
+                    <label>姓名</label>
+                    <input type="text" id="editName">
+                </div>
+                <div class="form-group">
+                    <label>国家</label>
+                    <input type="text" id="editCountry">
+                </div>
+                <div class="form-group">
+                    <label>省份</label>
+                    <input type="text" id="editProvince" placeholder="国内填写">
+                </div>
+                <div class="form-group">
+                    <label>城市</label>
+                    <input type="text" id="editCity">
+                </div>
+                <div class="form-group">
+                    <label>区县</label>
+                    <input type="text" id="editDistrict" placeholder="国内填写">
+                </div>
+                <div class="form-group">
+                    <label>毕业留言</label>
+                    <textarea id="editMessage"></textarea>
+                </div>
+                <button class="save-btn" onclick="saveSelfInfo()">保存修改</button>
+            </div>
+
+            <!-- 管理员面板 -->
+            <div id="adminPanel" style="display:none;">
+                <button class="add-user-btn" onclick="showAddModal()">+ 新增用户</button>
+                <div class="user-list" id="userList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 管理员编辑弹窗 -->
+    <div class="modal-mask" id="adminEditModal" onclick="if(event.target===this) closeAdminModal()">
+        <div class="modal-content">
+            <div class="modal-title">编辑用户信息</div>
+            <div class="form-group">
+                <label>姓名</label>
+                <input type="text" id="adminEditName">
+            </div>
+            <div class="form-group">
+                <label>国家</label>
+                <input type="text" id="adminEditCountry">
+            </div>
+            <div class="form-group">
+                <label>省份</label>
+                <input type="text" id="adminEditProvince">
+            </div>
+            <div class="form-group">
+                <label>城市</label>
+                <input type="text" id="adminEditCity">
+            </div>
+            <div class="form-group">
+                <label>区县</label>
+                <input type="text" id="adminEditDistrict">
+            </div>
+            <div class="form-group">
+                <label>毕业留言</label>
+                <textarea id="adminEditMessage"></textarea>
+            </div>
+            <div class="modal-btns">
+                <button class="cancel-btn" onclick="closeAdminModal()">取消</button>
+                <button class="save-btn" onclick="saveAdminEdit()">保存</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ========== 全局变量 ==========
+        let currentUser = JSON.parse(localStorage.getItem('currentUser'));
+        let mapChart = null;
+        let mapLevel = 'world'; // world / country / province / city
+        let currentGeoJson = null;
+        let currentProvinceName = '';
+        let currentCityName = '';
+        let allPoints = [];
+        let worldMapLoaded = false;
+        let adminUserList = []; // 管理员用户列表缓存
+        let currentEditUsername = ''; // 当前编辑的用户账号
+
+        // ========== 省份行政代码映射 ==========
+        const provinceAdcodeMap = {
+            '北京市': '110000', '天津市': '120000', '河北省': '130000',
+            '山西省': '140000', '内蒙古自治区': '150000', '辽宁省': '210000',
+            '吉林省': '220000', '黑龙江省': '230000', '上海市': '310000',
+            '江苏省': '320000', '浙江省': '330000', '安徽省': '340000',
+            '福建省': '350000', '江西省': '360000', '山东省': '370000',
+            '河南省': '410000', '湖北省': '420000', '湖南省': '430000',
+            '广东省': '440000', '广西壮族自治区': '450000', '海南省': '460000',
+            '重庆市': '500000', '四川省': '510000', '贵州省': '520000',
+            '云南省': '530000', '西藏自治区': '540000', '陕西省': '610000',
+            '甘肃省': '620000', '青海省': '630000', '宁夏回族自治区': '640000',
+            '新疆维吾尔自治区': '650000', '香港特别行政区': '810000',
+            '澳门特别行政区': '820000', '台湾省': '710000'
+        };
+
+        // ========== 标准经纬度坐标库 ==========
+        const cityCoords = {
+            '哈尔滨': [126.5349, 45.8038], '西安': [108.9398, 34.3416],
+            '北京': [116.4074, 39.9042], '天津': [117.2009, 39.0842],
+            '慕尼黑': [11.5761, 48.1374], '大连': [121.6147, 38.9140],
+            '济南': [117.1201, 36.6512], '苏州': [120.5853, 31.2990],
+            '上海': [121.4737, 31.2304], '湖州': [120.0887, 30.8908],
+            '宁波': [121.5498, 29.8683], '温州': [120.6994, 28.0206],
+            '武汉': [114.3055, 30.5931], '杭州': [120.1551, 30.2741],
+            '深圳': [114.0579, 22.5431], '香港': [114.1694, 22.3193],
+            '雪兰莪': [101.5538, 3.1390], '成都': [104.0668, 30.5728],
+            '重庆': [106.5516, 29.5630], '广州': [113.2644, 23.1291],
+            '沈阳': [123.4328, 41.8057], '开封': [114.3075, 34.8009],
+            '金华': [119.6495, 29.0895], '厦门': [118.0894, 24.4798],
+            '海口': [110.1999, 20.0442], '巴黎': [2.3522, 48.8566],
+            '东京': [139.6917, 35.6895], '伦敦': [-0.1276, 51.5072],
+            '纽约': [-74.0060, 40.7128], '悉尼': [151.2093, -33.8688]
+        };
+
+        // 省份中心坐标
+        const provinceCoords = {
+            '黑龙江省': [126.5349, 45.8038], '陕西省': [108.9398, 34.3416],
+            '北京市': [116.4074, 39.9042], '天津市': [117.2009, 39.0842],
+            '辽宁省': [123.4328, 41.8057], '山东省': [117.1201, 36.6512],
+            '江苏省': [120.5853, 31.2990], '上海市': [121.4737, 31.2304],
+            '浙江省': [120.1551, 30.2741], '湖北省': [114.3055, 30.5931],
+            '广东省': [113.2644, 23.1291], '香港特别行政区': [114.1694, 22.3193],
+            '四川省': [104.0668, 30.5728], '重庆市': [106.5516, 29.5630],
+            '福建省': [118.0894, 24.4798], '海南省': [110.1999, 20.0442],
+            '河南省': [114.3075, 34.8009]
+        };
+
+        // 区县标准经纬度坐标
+        const districtCoords = {
+            // 杭州市
+            '上城区': [120.1750, 30.2460], '拱墅区': [120.1500, 30.3200],
+            '西湖区': [120.1300, 30.2700], '滨江区': [120.2100, 30.2000],
+            '萧山区': [120.2700, 30.1800], '余杭区': [120.3000, 30.4100],
+            '临平区': [120.3000, 30.4200], '富阳区': [119.9500, 30.0700],
+            '临安区': [119.7200, 30.2300], '桐庐县': [119.6700, 29.8000],
+            '淳安县': [119.0300, 29.6100], '建德市': [119.2800, 29.4900],
+            // 宁波市
+            '海曙区': [121.5500, 29.8700], '江北区': [121.5300, 29.9200],
+            '北仑区': [121.8500, 29.9100], '镇海区': [121.7200, 30.0000],
+            '鄞州区': [121.5500, 29.8200], '奉化区': [121.4200, 29.6700],
+            '余姚市': [121.1500, 30.0500], '慈溪市': [121.2500, 30.1800],
+            '象山县': [121.8800, 29.4800], '宁海县': [121.4200, 29.3000],
+            // 温州市
+            '鹿城区': [120.6500, 28.0200], '龙湾区': [120.7500, 27.9800],
+            '瓯海区': [120.6200, 28.0000], '瑞安市': [120.6600, 27.7800],
+            '乐清市': [120.9500, 28.1500],
+            // 金华市
+            '婺城区': [119.6500, 29.0900], '金东区': [119.6400, 29.0800],
+            '义乌市': [120.0600, 29.3200], '东阳市': [120.2300, 29.2700],
+            '永康市': [120.0200, 28.9200]
+        };
+
+        // ========== 点位大小分级规则 ==========
+        function getSymbolSize(val, params) {
+            if (mapLevel === 'world') return 10;
+            if (mapLevel === 'country') return 14;
+            if (mapLevel === 'province') {
+                const cityName = params.data?.city;
+                if (!cityName) return 10;
+                const count = allPoints.filter(p => p.city === cityName).length;
+                return 8 + count * 3;
+            }
+            if (mapLevel === 'city') {
+                const districtName = params.data?.district;
+                if (!districtName) return 10;
+                const count = allPoints.filter(p => p.district === districtName).length;
+                return 8 + count * 3;
+            }
+            return 10;
+        }
+
+        // ========== 名称简化工具 ==========
+        function shortName(name) {
+            if (!name) return '';
+            return name
+                .replace('省', '').replace('市', '').replace('自治区', '')
+                .replace('特别行政区', '').replace('壮族', '').replace('回族', '')
+                .replace('维吾尔', '');
+        }
+
+        // ========== 数据聚合函数 ==========
+        function formatWorldPoints() {
+            const cityMap = {};
+            allPoints.forEach(p => {
+                const cityName = p.city || p.province || '未知';
+                if (!cityMap[cityName]) {
+                    cityMap[cityName] = {
+                        name: cityName,
+                        value: cityCoords[cityName] || cityCoords[p.province] || [104, 35]
+                    };
+                }
+            });
+            return Object.values(cityMap);
+        }
+
+        function formatProvincePoints() {
+            const provinceMap = {};
+            allPoints.forEach(p => {
+                if (p.country === '中国' && p.province) {
+                    if (!provinceMap[p.province]) {
+                        provinceMap[p.province] = {
+                            name: p.province,
+                            value: provinceCoords[p.province] || [104, 35]
+                        };
+                    }
+                }
+            });
+            return Object.values(provinceMap);
+        }
+
+        function formatCityPoints() {
+            const cityMap = {};
+            const targetShort = shortName(currentProvinceName);
+
+            allPoints.forEach(p => {
+                if (!p.city) return;
+                const provShort = shortName(p.province || '');
+                if (currentProvinceName && provShort !== targetShort && targetShort !== provShort) return;
+
+                const cityName = p.city.trim();
+                if (!cityMap[cityName]) {
+                    cityMap[cityName] = {
+                        name: cityName,
+                        value: cityCoords[cityName] || [120.15, 30.27],
+                        city: cityName
+                    };
+                }
+            });
+            return Object.values(cityMap);
+        }
+
+        function formatDistrictPoints() {
+            const districtMap = {};
+            const targetShort = shortName(currentCityName);
+
+            allPoints.forEach(p => {
+                if (!p.district || p.district.trim() === '') return;
+                const cityShort = shortName(p.city || '');
+                if (currentCityName && cityShort !== targetShort && targetShort !== cityShort) return;
+
+                const districtName = p.district.trim();
+                if (!districtMap[districtName]) {
+                    districtMap[districtName] = {
+                        name: districtName,
+                        value: districtCoords[districtName] || cityCoords[p.city] || [120.15, 30.27],
+                        district: districtName
+                    };
+                }
+            });
+            return Object.values(districtMap);
+        }
+
+        // ========== 同学列表渲染 + 搜索过滤 ==========
+        function renderClassmatesList(keyword = '') {
+            const container = document.getElementById('classmatesList');
+            const list = [];
+            const kw = keyword.trim().toLowerCase();
+
+            allPoints.forEach((p, i) => {
+                if (p.username !== currentUser.username) {
+                    // 关键词匹配
+                    if (kw && !p.name.toLowerCase().includes(kw)) return;
+                    list.push({ ...p, index: i });
+                }
+            });
+
+            if (list.length === 0) {
+                container.innerHTML = '<div style="text-align:center;color:#998670;padding:40px 0;font-size:13px;">未找到匹配的同学</div>';
+                return;
+            }
+
+            container.innerHTML = list.map(u => `
+                <div class="classmate-item" data-index="${u.index}" onclick="locateStudentByIndex(this)">
+                    <div class="classmate-name">${u.name}</div>
+                    <div class="classmate-loc">${u.country} ${u.province || ''} ${u.city || ''}</div>
+                    <div class="classmate-msg">${u.message || '暂无留言'}</div>
+                </div>
+            `).join('');
+        }
+
+        function filterClassmates(keyword) {
+            renderClassmatesList(keyword);
+        }
+
+        // ========== 定位到指定同学 ==========
+        function locateStudentByIndex(el) {
+            const idx = el.dataset.index;
+            const student = allPoints[idx];
+            if (student) locateStudent(student);
+        }
+
+        function locateStudent(student) {
+            const country = student.country || '';
+            const province = student.province || '';
+            const city = student.city || '';
+            const district = student.district || '';
+
+            // 获取最优坐标
+            let coord = null;
+            if (district && districtCoords[district]) coord = districtCoords[district];
+            else if (city && cityCoords[city]) coord = cityCoords[city];
+            else if (province && provinceCoords[province]) coord = provinceCoords[province];
+            else if (cityCoords[city]) coord = cityCoords[city];
+
+            if (!coord) {
+                alert('该同学位置信息不完整，无法定位');
+                return;
+            }
+
+            // 国外：世界地图定位
+            if (country !== '中国') {
+                renderWorldMap();
+                setTimeout(() => {
+                    mapChart.setOption({ geo: { center: coord, zoom: 3 } });
+                }, 150);
+                return;
+            }
+
+            // 国内无省份：中国地图定位
+            if (!province) {
+                loadChinaMap();
+                setTimeout(() => {
+                    mapChart.setOption({ geo: { center: coord, zoom: 2 } });
+                }, 400);
+                return;
+            }
+
+            // 匹配省份adcode
+            const provAdcode = provinceAdcodeMap[province];
+            if (!provAdcode) {
+                loadChinaMap();
+                setTimeout(() => {
+                    mapChart.setOption({ geo: { center: coord, zoom: 2 } });
+                }, 400);
+                return;
+            }
+
+            // 有省份无城市：省级地图定位
+            if (!city) {
+                loadProvinceMap(provAdcode, province);
+                setTimeout(() => {
+                    mapChart.setOption({ geo: { center: coord, zoom: 1.6 } });
+                }, 400);
+                return;
+            }
+
+            // 有城市无区县：省级地图定位到城市
+            if (!district) {
+                loadProvinceMap(provAdcode, province);
+                setTimeout(() => {
+                    mapChart.setOption({ geo: { center: coord, zoom: 2.2 } });
+                }, 400);
+                return;
+            }
+
+            // 有区县：下钻到市级地图定位
+            loadProvinceMap(provAdcode, province);
+            setTimeout(() => {
+                const cityAdcode = getAdcodeByName(currentGeoJson, city);
+                if (cityAdcode) {
+                    loadCityMap(cityAdcode, city);
+                    setTimeout(() => {
+                        mapChart.setOption({ geo: { center: coord, zoom: 2.5 } });
+                    }, 400);
+                } else {
+                    mapChart.setOption({ geo: { center: coord, zoom: 2.2 } });
+                }
+            }, 400);
+        }
+
+        // ========== 页面初始化 ==========
+        window.onload = function() {
+            if (!currentUser) {
+                window.location.href = '/';
+                return;
+            }
+            document.getElementById('currentUserName').textContent =
+                currentUser.name + '（' + (currentUser.role === 'admin' ? '管理员' : '成员') + '）';
+
+            if (currentUser.role === 'admin') {
+                document.getElementById('adminTab').style.display = 'block';
+            }
+
+            mapChart = echarts.init(document.getElementById('map'));
+            window.addEventListener('resize', () => mapChart.resize());
+
+            loadMapPoints();
+            loadSelfInfo();
+            initWorldMap();
+        };
+
+        // ========== 1. 世界地图（本地路径） ==========
+        function initWorldMap() {
+            showLoading();
+            fetch('static/maps/world.json')
+                .then(res => res.json())
+                .then(worldJson => {
+                    echarts.registerMap('world', worldJson);
+                    worldMapLoaded = true;
+                    hideLoading();
+                    renderWorldMap();
+                    bindWorldClick();
+                })
+                .catch(() => {
+                    document.getElementById('mapLoading').textContent = '世界地图加载失败，请检查 static/maps/world.json 是否存在';
+                });
+        }
+
+        function renderWorldMap() {
+            mapLevel = 'world';
+            currentProvinceName = '';
+            currentCityName = '';
+            document.getElementById('backBtn').style.display = 'none';
+
+            const option = {
+                backgroundColor: '#f5efe6',
+                tooltip: { show: false },
+                geo: {
+                    map: 'world',
+                    roam: true,
+                    zoom: 1.2,
+                    center: [105, 35],
+                    itemStyle: {
+                        areaColor: '#e0d5c3',
+                        borderColor: '#c7b59a',
+                        borderWidth: 0.8
+                    },
+                    // 常态不显示国家名称
+                    label: {
+                        show: false,
+                        color: '#7a6a55',
+                        fontSize: 11
+                    },
+                    // 鼠标悬停时显示当前国家名称
+                    emphasis: {
+                        itemStyle: { areaColor: '#d4c4a8' },
+                        label: {
+                            show: true,
+                            color: '#5a4a35',
+                            fontSize: 12,
+                            fontWeight: 50
+                        }
+                    }
+                },
+                series: [{
+                    type: 'scatter',
+                    coordinateSystem: 'geo',
+                    symbolSize: 10,
+                    itemStyle: {
+                        color: '#5a9ea8',
+                        shadowBlur: 6,
+                        shadowColor: 'rgba(90, 158, 168, 0.4)'
+                    },
+                    data: formatWorldPoints(),
+                    tooltip: { show: false }
+                }]
+            };
+            mapChart.setOption(option, true);
+        }
+
+        function bindWorldClick() {
+            mapChart.off('click');
+            mapChart.on('click', function(params) {
+                if (params.componentType === 'geo') {
+                    const name = params.name || '';
+                    if (name.toLowerCase() === 'china' || name === '中国') {
+                        loadChinaMap();
+                    }
+                }
+            });
+        }
+
+        // ========== 2. 中国省级地图（本地路径） ==========
+        function loadChinaMap() {
+            showLoading();
+            fetch('static/maps/100000_full.json')
+                .then(res => res.json())
+                .then(geoJson => {
+                    currentGeoJson = geoJson;
+                    echarts.registerMap('china', geoJson);
+                    hideLoading();
+                    renderChinaMap();
+                    bindProvinceClick(geoJson);
+                })
+                .catch(() => {
+                    hideLoading();
+                    alert('中国地图加载失败，请检查 static/maps/100000_full.json 是否存在');
+                });
+        }
+
+        function renderChinaMap() {
+            mapLevel = 'country';
+            currentProvinceName = '';
+            currentCityName = '';
+            document.getElementById('backBtn').style.display = 'block';
+
+            const option = {
+                backgroundColor: '#f5efe6',
+                tooltip: { show: false },
+                geo: {
+                    map: 'china',
+                    roam: true,
+                    zoom: 1.2,
+                    center: [105, 35],
+                    itemStyle: {
+                        areaColor: '#e0d5c3',
+                        borderColor: '#c7b59a',
+                        borderWidth: 0.8
+                    },
+                    emphasis: {
+                        itemStyle: { areaColor: '#d4c4a8' },
+                        label: { show: true, color: '#5a4a35', fontSize: 12 }
+                    }
+                },
+                series: [{
+                    type: 'scatter',
+                    coordinateSystem: 'geo',
+                    symbolSize: 14,
+                    itemStyle: {
+                        color: '#5a9ea8',
+                        shadowBlur: 6,
+                        shadowColor: 'rgba(90, 158, 168, 0.4)'
+                    },
+                    data: formatProvincePoints(),
+                    tooltip: { show: false }
+                }]
+            };
+            mapChart.setOption(option, true);
+        }
+
+        function bindProvinceClick(geoJson) {
+            mapChart.off('click');
+            mapChart.on('click', params => {
+                if (params.componentType === 'geo') {
+                    const adcode = getAdcodeByName(geoJson, params.name);
+                    if (adcode) loadProvinceMap(adcode, params.name);
+                }
+            });
+        }
+
+        // ========== 3. 省级（市级）地图（本地路径） ==========
+        function loadProvinceMap(adcode, name) {
+            currentProvinceName = name || '';
+            currentCityName = '';
+            showLoading();
+
+            fetch(`static/maps/${adcode}_full.json`)
+                .then(res => res.json())
+                .then(geoJson => {
+                    currentGeoJson = geoJson;
+                    echarts.registerMap('province', geoJson);
+                    hideLoading();
+                    renderProvinceMap();
+                    bindCityClick(geoJson);
+                })
+                .catch(() => {
+                    hideLoading();
+                    alert(`省级地图加载失败，请检查 static/maps/${adcode}_full.json 是否存在`);
+                });
+        }
+
+        function renderProvinceMap() {
+            mapLevel = 'province';
+            document.getElementById('backBtn').style.display = 'block';
+
+            const option = {
+                backgroundColor: '#f5efe6',
+                tooltip: { show: false },
+                geo: {
+                    map: 'province',
+                    roam: true,
+                    zoom: 1.2,
+                    itemStyle: {
+                        areaColor: '#e0d5c3',
+                        borderColor: '#c7b59a',
+                        borderWidth: 0.8
+                    },
+                    emphasis: {
+                        itemStyle: { areaColor: '#d4c4a8' },
+                        label: { show: true, color: '#5a4a35', fontSize: 12 }
+                    }
+                },
+                series: [{
+                    type: 'scatter',
+                    coordinateSystem: 'geo',
+                    symbolSize: getSymbolSize,
+                    itemStyle: {
+                        color: '#5a9ea8',
+                        shadowBlur: 6,
+                        shadowColor: 'rgba(90, 158, 168, 0.4)'
+                    },
+                    data: formatCityPoints(),
+                    tooltip: { show: false }
+                }]
+            };
+            mapChart.setOption(option, true);
+        }
+
+        function bindCityClick(geoJson) {
+            mapChart.off('click');
+            mapChart.on('click', params => {
+                if (params.componentType === 'geo') {
+                    const cityCode = getAdcodeByName(geoJson, params.name);
+                    if (cityCode) loadCityMap(cityCode, params.name);
+                }
+            });
+        }
+
+        // ========== 4. 区县级地图（本地路径） ==========
+        function loadCityMap(adcode, name) {
+            currentCityName = name || '';
+            showLoading();
+
+            fetch(`static/maps/${adcode}_full.json`)
+                .then(res => res.json())
+                .then(geoJson => {
+                    currentGeoJson = geoJson;
+                    echarts.registerMap('city', geoJson);
+                    hideLoading();
+                    renderCityMap();
+                })
+                .catch(() => {
+                    hideLoading();
+                    alert(`市级地图加载失败，请检查 static/maps/${adcode}_full.json 是否存在`);
+                });
+        }
+
+        function renderCityMap() {
+            mapLevel = 'city';
+            document.getElementById('backBtn').style.display = 'block';
+
+            const option = {
+                backgroundColor: '#f5efe6',
+                tooltip: { show: false },
+                geo: {
+                    map: 'city',
+                    roam: true,
+                    zoom: 1.2,
+                    itemStyle: {
+                        areaColor: '#e0d5c3',
+                        borderColor: '#c7b59a',
+                        borderWidth: 0.8
+                    },
+                    emphasis: {
+                        itemStyle: { areaColor: '#d4c4a8' },
+                        label: { show: true, color: '#5a4a35', fontSize: 12 }
+                    }
+                },
+                series: [{
+                    type: 'scatter',
+                    coordinateSystem: 'geo',
+                    symbolSize: getSymbolSize,
+                    itemStyle: {
+                        color: '#5a9ea8',
+                        shadowBlur: 6,
+                        shadowColor: 'rgba(90, 158, 168, 0.4)'
+                    },
+                    data: formatDistrictPoints(),
+                    tooltip: { show: false }
+                }]
+            };
+            mapChart.setOption(option, true);
+        }
+
+        // ========== 返回上一级 ==========
+        function goBack() {
+            if (mapLevel === 'city') {
+                currentCityName = '';
+                if (!currentGeoJson || !currentGeoJson.features || currentGeoJson.features.length === 0) {
+                    loadChinaMap();
+                    return;
+                }
+                const cityCode = currentGeoJson.features[0].properties.adcode;
+                const provCode = String(cityCode).slice(0, 2) + '0000';
+                loadProvinceMap(provCode, currentProvinceName);
+            } else if (mapLevel === 'province') {
+                currentProvinceName = '';
+                loadChinaMap();
+            } else if (mapLevel === 'country') {
+                renderWorldMap();
+                bindWorldClick();
+            }
+        }
+
+        // ========== 工具函数 ==========
+        function getAdcodeByName(geoJson, name) {
+            for (let feat of geoJson.features) {
+                if (feat.properties.name === name) {
+                    return feat.properties.adcode;
+                }
+            }
+            return null;
+        }
+
+        function showLoading() {
+            document.getElementById('mapLoading').style.display = 'block';
+        }
+        function hideLoading() {
+            document.getElementById('mapLoading').style.display = 'none';
+        }
+
+        // ========== 点位数据加载 ==========
+        function loadMapPoints() {
+            fetch('/api/map/points')
+                .then(res => res.json())
+                .then(data => {
+                    allPoints = data.data;
+                    document.getElementById('totalCount').textContent = allPoints.length;
+                    if (worldMapLoaded && mapChart) {
+                        refreshCurrentPoints();
+                    }
+                    // 保持当前搜索关键词
+                    const kw = document.getElementById('searchInput')?.value || '';
+                    renderClassmatesList(kw);
+                });
+        }
+
+        function refreshCurrentPoints() {
+            if (mapLevel === 'world') renderWorldMap();
+            else if (mapLevel === 'country') renderChinaMap();
+            else if (mapLevel === 'province') renderProvinceMap();
+            else if (mapLevel === 'city') renderCityMap();
+        }
+
+        // ========== 个人信息 ==========
+        function loadSelfInfo() {
+            document.getElementById('editName').value = currentUser.name;
+            document.getElementById('editCountry').value = currentUser.country;
+            document.getElementById('editProvince').value = currentUser.province || '';
+            document.getElementById('editCity').value = currentUser.city || '';
+            document.getElementById('editDistrict').value = currentUser.district || '';
+            document.getElementById('editMessage').value = currentUser.message || '';
+        }
+
+        function saveSelfInfo() {
+            const data = {
+                name: document.getElementById('editName').value,
+                country: document.getElementById('editCountry').value,
+                province: document.getElementById('editProvince').value,
+                city: document.getElementById('editCity').value,
+                district: document.getElementById('editDistrict').value,
+                message: document.getElementById('editMessage').value
+            };
+
+            fetch(`/api/user/self?username=${currentUser.username}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(res => res.json())
+            .then(res => {
+                if (res.code === 200) {
+                    alert('保存成功');
+                    currentUser = res.data;
+                    localStorage.setItem('currentUser', JSON.stringify(res.data));
+                    document.getElementById('currentUserName').textContent =
+                        currentUser.name + '（' + (currentUser.role === 'admin' ? '管理员' : '成员') + '）';
+                    loadMapPoints();
+                } else {
+                    alert(res.msg);
+                }
+            });
+        }
+
+        // ========== 标签切换 ==========
+        function switchTab(type) {
+            document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active'));
+            document.getElementById('classmatesPanel').style.display = 'none';
+            document.getElementById('selfPanel').style.display = 'none';
+            document.getElementById('adminPanel').style.display = 'none';
+
+            if (type === 'classmates') {
+                document.querySelector('.tab-item:nth-child(1)').classList.add('active');
+                document.getElementById('classmatesPanel').style.display = 'block';
+            } else if (type === 'self') {
+                document.querySelector('.tab-item:nth-child(2)').classList.add('active');
+                document.getElementById('selfPanel').style.display = 'block';
+            } else {
+                document.querySelector('.tab-item:nth-child(3)').classList.add('active');
+                document.getElementById('adminPanel').style.display = 'block';
+                loadAdminUserList();
+            }
+        }
+
+        // ========== 管理员功能 ==========
+        function loadAdminUserList() {
+            fetch(`/api/admin/users?admin_name=${currentUser.username}`)
+                .then(res => res.json())
+                .then(res => {
+                    if (res.code === 200) {
+                        adminUserList = res.data; // 缓存管理员用户列表
+                        renderUserList(res.data);
+                    }
+                });
+        }
+
+        function renderUserList(users) {
+            const container = document.getElementById('userList');
+            container.innerHTML = users.map(u => `
+                <div class="user-item">
+                    <div class="name-row">
+                        <span class="name">${u.name}</span>
+                        <span class="role">${u.role === 'admin' ? '管理员' : '成员'}</span>
+                    </div>
+                    <div class="loc">${u.country} ${u.province || ''} ${u.city || ''} ${u.district || ''}</div>
+                    <div class="ops">
+                        <button onclick="editUser('${u.username}')">编辑</button>
+                        <button onclick="deleteUser('${u.username}')">删除</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 打开编辑弹窗
+        function editUser(username) {
+            // 优先从管理员用户列表查找，找不到再从地图点位列表找
+            let user = adminUserList.find(u => u.username === username);
+            if (!user) {
+                user = allPoints.find(p => p.username === username);
+            }
+
+            if (!user) {
+                alert('未找到对应用户信息，请刷新页面重试');
+                return;
+            }
+
+            currentEditUsername = username;
+            document.getElementById('adminEditName').value = user.name || '';
+            document.getElementById('adminEditCountry').value = user.country || '';
+            document.getElementById('adminEditProvince').value = user.province || '';
+            document.getElementById('adminEditCity').value = user.city || '';
+            document.getElementById('adminEditDistrict').value = user.district || '';
+            document.getElementById('adminEditMessage').value = user.message || '';
+
+            document.getElementById('adminEditModal').style.display = 'block';
+        }
+
+        // 关闭编辑弹窗
+        function closeAdminModal() {
+            document.getElementById('adminEditModal').style.display = 'none';
+            currentEditUsername = '';
+        }
+
+        // 保存管理员编辑
+        function saveAdminEdit() {
+            if (!currentEditUsername) return;
+
+            const data = {
+                name: document.getElementById('adminEditName').value,
+                country: document.getElementById('adminEditCountry').value,
+                province: document.getElementById('adminEditProvince').value,
+                city: document.getElementById('adminEditCity').value,
+                district: document.getElementById('adminEditDistrict').value,
+                message: document.getElementById('adminEditMessage').value
+            };
+
+            fetch(`/api/admin/users/${currentEditUsername}?admin_name=${currentUser.username}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(res => res.json())
+            .then(res => {
+                if (res.code === 200) {
+                    alert('修改成功');
+                    closeAdminModal();
+                    loadAdminUserList();
+                    loadMapPoints();
+                } else {
+                    alert(res.msg);
+                }
+            })
+            .catch(err => {
+                alert('保存失败，请检查接口或本地服务');
+                console.error(err);
+            });
+        }
+
+        function showAddModal() {
+            const username = prompt('请输入新用户账号：');
+            if (!username) return;
+            const password = prompt('请设置初始密码：', '1233456');
+            if (!password) return;
+            const name = prompt('请输入用户姓名：');
+            if (!name) return;
+
+            fetch(`/api/admin/users?admin_name=${currentUser.username}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password, name, country: '中国' })
+            })
+            .then(res => res.json())
+            .then(res => {
+                alert(res.msg);
+                if (res.code === 200) {
+                    loadAdminUserList();
+                    loadMapPoints();
+                }
+            });
+        }
+
+        function deleteUser(username) {
+            if (!confirm('确定要删除该用户吗？')) return;
+            fetch(`/api/admin/users/${username}?admin_name=${currentUser.username}`, {
+                method: 'DELETE'
+            })
+            .then(res => res.json())
+            .then(res => {
+                alert(res.msg);
+                loadAdminUserList();
+                loadMapPoints();
+            });
+        }
+
+        // ========== 退出登录 ==========
+        function logout() {
+            localStorage.removeItem('currentUser');
+            window.location.href = '/';
+        }
+    </script>
+</body>
+</html>
