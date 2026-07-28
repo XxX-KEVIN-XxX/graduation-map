@@ -33,7 +33,7 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///./data/users.db")
 # 兼容Render的postgres协议前缀
 if DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg://", 1)
 
 # 创建数据库引擎
 engine = create_engine(
