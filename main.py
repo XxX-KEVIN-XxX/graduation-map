@@ -78,7 +78,7 @@ def init_default_admin():
         )
         # 新增的第二个默认管理员
         second_admin = UserDB(
-            username="柳成荫",
+            username="liuchengyin",
             password="123456",
             name="柳成荫",
             role="admin"
