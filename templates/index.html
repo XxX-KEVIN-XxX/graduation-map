@@ -106,11 +106,24 @@
             color: #998670;
             font-size: 14px;
             z-index: 9;
-            background: rgba(255,253,248,0.9);
-            padding: 10px 20px;
+            background: rgba(255,253,248,0.95);
+            padding: 12px 24px;
             border-radius: 4px;
             border: 1px solid #e8dccc;
             display: none;
+            text-align: center;
+            line-height: 1.8;
+        }
+        .map-loading button {
+            margin-top: 8px;
+            padding: 4px 12px;
+            border: 1px solid #c7b59a;
+            background: #fff;
+            border-radius: 3px;
+            color: #8b6f4e;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 12px;
         }
         .map-stats {
             position: absolute;
@@ -238,7 +251,12 @@
         .classmate-msg {
             font-size: 12px;
             color: #7a6a55;
-            line-height: 1.4;
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .form-group {
@@ -473,11 +491,11 @@
             <!-- 个人信息面板 -->
             <div id="selfPanel" style="display:none;">
                 <div class="form-group">
-                    <label>姓名</label>
+                    <label>姓名 <span style="color:#c0504d;">*</span></label>
                     <input type="text" id="editName">
                 </div>
                 <div class="form-group">
-                    <label>国家</label>
+                    <label>国家 <span style="color:#c0504d;">*</span></label>
                     <input type="text" id="editCountry">
                 </div>
                 <div class="form-group">
@@ -513,7 +531,7 @@
         <div class="modal-content">
             <div class="modal-title">编辑用户信息</div>
             <div class="form-group">
-                <label>姓名</label>
+                <label>姓名 <span style="color:#c0504d;">*</span></label>
                 <input type="text" id="adminEditName">
             </div>
             <div class="form-group">
@@ -522,7 +540,7 @@
                 <div class="form-tip">仅需修改密码时填写，留空保持原密码不变</div>
             </div>
             <div class="form-group">
-                <label>国家</label>
+                <label>国家 <span style="color:#c0504d;">*</span></label>
                 <input type="text" id="adminEditCountry">
             </div>
             <div class="form-group">
@@ -572,6 +590,10 @@
     </div>
 
     <script>
+        // ========== 全局常量配置 ==========
+        const API_BASE = '/api';
+        const MAP_BASE = '/static/maps';
+
         // ========== 全局变量 ==========
         let currentUser = JSON.parse(localStorage.getItem('currentUser'));
         let mapChart = null;
@@ -581,14 +603,17 @@
         let currentCityName = '';
         let allPoints = [];
         let worldMapLoaded = false;
-        let adminUserList = []; // 管理员用户列表缓存
-        let currentEditUsername = ''; // 当前编辑的用户账号
+        let adminUserList = [];
+        let currentEditUsername = '';
 
-        // 优化新增：全局锁与定时器
-        let loadMapLock = ''; // 地图加载锁，解决异步竞态
-        let locateTimer = null; // 定位定时器
-        let searchTimer = null; // 搜索防抖定时器
-        let highlightTimer = null; // 点位高亮定时器
+        // 异步锁与定时器
+        let loadMapLock = '';
+        let locateTimer = null;
+        let searchTimer = null;
+        let highlightTimer = null;
+
+        // 地图资源缓存
+        const mapCache = {};
 
         // ========== 省份行政代码映射 ==========
         const provinceAdcodeMap = {
@@ -606,7 +631,7 @@
             '澳门特别行政区': '820000', '台湾省': '710000'
         };
 
-        // ========== 标准经纬度坐标库 ==========
+        // ========== 标准经纬度坐标库（简称key，兼容全称） ==========
         const cityCoords = {
             '哈尔滨': [126.5349, 45.8038], '西安': [108.9398, 34.3416],
             '北京': [116.4074, 39.9042], '天津': [117.2009, 39.0842],
@@ -625,70 +650,83 @@
             '纽约': [-74.0060, 40.7128], '悉尼': [151.2093, -33.8688]
         };
 
-        // 省份中心坐标
+        // 省份中心坐标（简称key）
         const provinceCoords = {
-            '黑龙江省': [126.5349, 45.8038], '陕西省': [108.9398, 34.3416],
-            '北京市': [116.4074, 39.9042], '天津市': [117.2009, 39.0842],
-            '辽宁省': [123.4328, 41.8057], '山东省': [117.1201, 36.6512],
-            '江苏省': [120.5853, 31.2990], '上海市': [121.4737, 31.2304],
-            '浙江省': [120.1551, 30.2741], '湖北省': [114.3055, 30.5931],
-            '广东省': [113.2644, 23.1291], '香港特别行政区': [114.1694, 22.3193],
-            '四川省': [104.0668, 30.5728], '重庆市': [106.5516, 29.5630],
-            '福建省': [118.0894, 24.4798], '海南省': [110.1999, 20.0442],
-            '河南省': [114.3075, 34.8009]
+            '黑龙江': [126.5349, 45.8038], '陕西': [108.9398, 34.3416],
+            '北京': [116.4074, 39.9042], '天津': [117.2009, 39.0842],
+            '辽宁': [123.4328, 41.8057], '山东': [117.1201, 36.6512],
+            '江苏': [120.5853, 31.2990], '上海': [121.4737, 31.2304],
+            '浙江': [120.1551, 30.2741], '湖北': [114.3055, 30.5931],
+            '广东': [113.2644, 23.1291], '香港': [114.1694, 22.3193],
+            '四川': [104.0668, 30.5728], '重庆': [106.5516, 29.5630],
+            '福建': [118.0894, 24.4798], '海南': [110.1999, 20.0442],
+            '河南': [114.3075, 34.8009]
         };
 
         // 区县标准经纬度坐标
         const districtCoords = {
             // 杭州市
-            '上城区': [120.1750, 30.2460], '拱墅区': [120.1500, 30.3200],
-            '西湖区': [120.1300, 30.2700], '滨江区': [120.2100, 30.2000],
-            '萧山区': [120.2700, 30.1800], '余杭区': [120.3000, 30.4100],
-            '临平区': [120.3000, 30.4200], '富阳区': [119.9500, 30.0700],
-            '临安区': [119.7200, 30.2300], '桐庐县': [119.6700, 29.8000],
-            '淳安县': [119.0300, 29.6100], '建德市': [119.2800, 29.4900],
+            '上城': [120.1750, 30.2460], '拱墅': [120.1500, 30.3200],
+            '西湖': [120.1300, 30.2700], '滨江': [120.2100, 30.2000],
+            '萧山': [120.2700, 30.1800], '余杭': [120.3000, 30.4100],
+            '临平': [120.3000, 30.4200], '富阳': [119.9500, 30.0700],
+            '临安': [119.7200, 30.2300], '桐庐': [119.6700, 29.8000],
+            '淳安': [119.0300, 29.6100], '建德': [119.2800, 29.4900],
             // 宁波市
-            '海曙区': [121.5500, 29.8700], '江北区': [121.5300, 29.9200],
-            '北仑区': [121.8500, 29.9100], '镇海区': [121.7200, 30.0000],
-            '鄞州区': [121.5500, 29.8200], '奉化区': [121.4200, 29.6700],
-            '余姚市': [121.1500, 30.0500], '慈溪市': [121.2500, 30.1800],
-            '象山县': [121.8800, 29.4800], '宁海县': [121.4200, 29.3000],
+            '海曙': [121.5500, 29.8700], '江北': [121.5300, 29.9200],
+            '北仑': [121.8500, 29.9100], '镇海': [121.7200, 30.0000],
+            '鄞州': [121.5500, 29.8200], '奉化': [121.4200, 29.6700],
+            '余姚': [121.1500, 30.0500], '慈溪': [121.2500, 30.1800],
+            '象山': [121.8800, 29.4800], '宁海': [121.4200, 29.3000],
             // 温州市
-            '鹿城区': [120.6500, 28.0200], '龙湾区': [120.7500, 27.9800],
-            '瓯海区': [120.6200, 28.0000], '瑞安市': [120.6600, 27.7800],
-            '乐清市': [120.9500, 28.1500],
+            '鹿城': [120.6500, 28.0200], '龙湾': [120.7500, 27.9800],
+            '瓯海': [120.6200, 28.0000], '瑞安': [120.6600, 27.7800],
+            '乐清': [120.9500, 28.1500],
             // 金华市
-            '婺城区': [119.6500, 29.0900], '金东区': [119.6400, 29.0800],
-            '义乌市': [120.0600, 29.3200], '东阳市': [120.2300, 29.2700],
-            '永康市': [120.0200, 28.9200]
+            '婺城': [119.6500, 29.0900], '金东': [119.6400, 29.0800],
+            '义乌': [120.0600, 29.3200], '东阳': [120.2300, 29.2700],
+            '永康': [120.0200, 28.9200]
         };
+
+        // ========== 通用工具函数 ==========
+        // 名称简化（兼容全称/简称）
+        function shortName(name) {
+            if (!name) return '';
+            return name.trim()
+                .replace(/省|市|区|县|自治区|特别行政区|壮族|回族|维吾尔/g, '');
+        }
+
+        // 统一请求封装
+        function request(url, options = {}) {
+            return fetch(url, {
+                headers: { 'Content-Type': 'application/json', ...options.headers },
+                ...options
+            })
+            .then(res => res.json())
+            .catch(err => {
+                console.error('请求失败:', err);
+                alert('网络请求失败，请检查服务状态');
+                throw err;
+            });
+        }
 
         // ========== 点位大小分级规则 ==========
         function getSymbolSize(val, params) {
             if (mapLevel === 'world') return 10;
             if (mapLevel === 'country') return 14;
             if (mapLevel === 'province') {
-                const cityName = params.data?.city;
+                const cityName = shortName(params.data?.city);
                 if (!cityName) return 10;
-                const count = allPoints.filter(p => p.city === cityName).length;
+                const count = allPoints.filter(p => shortName(p.city) === cityName).length;
                 return 8 + count * 3;
             }
             if (mapLevel === 'city') {
-                const districtName = params.data?.district;
+                const districtName = shortName(params.data?.district);
                 if (!districtName) return 10;
-                const count = allPoints.filter(p => p.district === districtName).length;
+                const count = allPoints.filter(p => shortName(p.district) === districtName).length;
                 return 8 + count * 3;
             }
             return 10;
-        }
-
-        // ========== 名称简化工具 ==========
-        function shortName(name) {
-            if (!name) return '';
-            return name
-                .replace('省', '').replace('市', '').replace('自治区', '')
-                .replace('特别行政区', '').replace('壮族', '').replace('回族', '')
-                .replace('维吾尔', '');
         }
 
         // ========== 数据聚合函数 ==========
@@ -696,10 +734,14 @@
             const cityMap = {};
             allPoints.forEach(p => {
                 const cityName = p.city || p.province || '未知';
-                if (!cityMap[cityName]) {
-                    cityMap[cityName] = {
+                const cityShort = shortName(cityName);
+                if (!cityMap[cityShort]) {
+                    const coord = cityCoords[cityShort] || cityCoords[shortName(p.province)] || [0, 0];
+                    // 国外无坐标时不显示到中国默认位置
+                    if (p.country !== '中国' && coord[0] === 0 && coord[1] === 0) return;
+                    cityMap[cityShort] = {
                         name: cityName,
-                        value: cityCoords[cityName] || cityCoords[p.province] || [104, 35]
+                        value: coord
                     };
                 }
             });
@@ -710,10 +752,11 @@
             const provinceMap = {};
             allPoints.forEach(p => {
                 if (p.country === '中国' && p.province) {
-                    if (!provinceMap[p.province]) {
-                        provinceMap[p.province] = {
+                    const provShort = shortName(p.province);
+                    if (!provinceMap[provShort]) {
+                        provinceMap[provShort] = {
                             name: p.province,
-                            value: provinceCoords[p.province] || [104, 35]
+                            value: provinceCoords[provShort] || [104, 35]
                         };
                     }
                 }
@@ -728,13 +771,14 @@
             allPoints.forEach(p => {
                 if (!p.city) return;
                 const provShort = shortName(p.province || '');
-                if (currentProvinceName && provShort !== targetShort && targetShort !== provShort) return;
+                if (currentProvinceName && provShort !== targetShort) return;
 
                 const cityName = p.city.trim();
-                if (!cityMap[cityName]) {
-                    cityMap[cityName] = {
+                const cityShort = shortName(cityName);
+                if (!cityMap[cityShort]) {
+                    cityMap[cityShort] = {
                         name: cityName,
-                        value: cityCoords[cityName] || [120.15, 30.27],
+                        value: cityCoords[cityShort] || provinceCoords[targetShort] || [120.15, 30.27],
                         city: cityName
                     };
                 }
@@ -749,18 +793,35 @@
             allPoints.forEach(p => {
                 if (!p.district || p.district.trim() === '') return;
                 const cityShort = shortName(p.city || '');
-                if (currentCityName && cityShort !== targetShort && targetShort !== cityShort) return;
+                if (currentCityName && cityShort !== targetShort) return;
 
                 const districtName = p.district.trim();
-                if (!districtMap[districtName]) {
-                    districtMap[districtName] = {
+                const districtShort = shortName(districtName);
+                if (!districtMap[districtShort]) {
+                    districtMap[districtShort] = {
                         name: districtName,
-                        value: districtCoords[districtName] || cityCoords[p.city] || [120.15, 30.27],
+                        value: districtCoords[districtShort] || cityCoords[targetShort] || [120.15, 30.27],
                         district: districtName
                     };
                 }
             });
             return Object.values(districtMap);
+        }
+
+        // 生成点位tooltip内容（显示同学姓名）
+        function getPointTooltip(name, level) {
+            let list = [];
+            if (level === 'world') {
+                list = allPoints.filter(p => shortName(p.city || p.province) === shortName(name));
+            } else if (level === 'country') {
+                list = allPoints.filter(p => shortName(p.province) === shortName(name));
+            } else if (level === 'province') {
+                list = allPoints.filter(p => shortName(p.city) === shortName(name));
+            } else if (level === 'city') {
+                list = allPoints.filter(p => shortName(p.district) === shortName(name));
+            }
+            const names = list.map(p => p.name).join('、');
+            return `${name}<br/>共 ${list.length} 位同学<br/><span style="font-size:12px;color:#998670;">${names || '暂无'}</span>`;
         }
 
         // ========== 同学列表渲染 + 搜索过滤 ==========
@@ -771,7 +832,6 @@
 
             allPoints.forEach((p, i) => {
                 if (p.username !== currentUser.username) {
-                    // 关键词匹配
                     if (kw && !p.name.toLowerCase().includes(kw)) return;
                     list.push({ ...p, index: i });
                 }
@@ -785,14 +845,13 @@
             container.innerHTML = list.map(u => `
                 <div class="classmate-item" data-index="${u.index}" onclick="locateStudentByIndex(this)">
                     <div class="classmate-name">${u.name}</div>
-                    <div class="classmate-loc">${u.country} ${u.province || ''} ${u.city || ''}</div>
+                    <div class="classmate-loc">${u.country} ${u.province || ''} ${u.city || ''} ${u.district || ''}</div>
                     <div class="classmate-msg">${u.message || '暂无留言'}</div>
                 </div>
             `).join('');
         }
 
         function filterClassmates(keyword) {
-            // 搜索防抖
             if (searchTimer) clearTimeout(searchTimer);
             searchTimer = setTimeout(() => {
                 renderClassmatesList(keyword);
@@ -807,7 +866,6 @@
         }
 
         function locateStudent(student) {
-            // 清除旧的定位定时器
             if (locateTimer) clearTimeout(locateTimer);
             if (highlightTimer) clearTimeout(highlightTimer);
 
@@ -819,17 +877,17 @@
             // 获取最优坐标
             let coord = null;
             let highlightName = '';
-            if (district && districtCoords[district]) {
-                coord = districtCoords[district];
+            if (district && districtCoords[shortName(district)]) {
+                coord = districtCoords[shortName(district)];
                 highlightName = district;
-            } else if (city && cityCoords[city]) {
-                coord = cityCoords[city];
+            } else if (city && cityCoords[shortName(city)]) {
+                coord = cityCoords[shortName(city)];
                 highlightName = city;
-            } else if (province && provinceCoords[province]) {
-                coord = provinceCoords[province];
+            } else if (province && provinceCoords[shortName(province)]) {
+                coord = provinceCoords[shortName(province)];
                 highlightName = province;
-            } else if (cityCoords[city]) {
-                coord = cityCoords[city];
+            } else if (cityCoords[shortName(city)]) {
+                coord = cityCoords[shortName(city)];
                 highlightName = city;
             }
 
@@ -841,9 +899,10 @@
             // 国外：世界地图定位
             if (country !== '中国') {
                 renderWorldMap();
+                bindWorldClick();
                 locateTimer = setTimeout(() => {
                     mapChart.setOption({ geo: { center: coord, zoom: 3 } });
-                    highlightPoint(highlightName);
+                    highlightPoint(shortName(highlightName));
                 }, 200);
                 return;
             }
@@ -853,18 +912,24 @@
                 loadChinaMap();
                 locateTimer = setTimeout(() => {
                     mapChart.setOption({ geo: { center: coord, zoom: 2 } });
-                    highlightPoint(highlightName);
+                    highlightPoint(shortName(highlightName));
                 }, 500);
                 return;
             }
 
             // 匹配省份adcode
-            const provAdcode = provinceAdcodeMap[province];
+            let provAdcode = null;
+            for (let fullName in provinceAdcodeMap) {
+                if (shortName(fullName) === shortName(province)) {
+                    provAdcode = provinceAdcodeMap[fullName];
+                    break;
+                }
+            }
             if (!provAdcode) {
                 loadChinaMap();
                 locateTimer = setTimeout(() => {
                     mapChart.setOption({ geo: { center: coord, zoom: 2 } });
-                    highlightPoint(highlightName);
+                    highlightPoint(shortName(highlightName));
                 }, 500);
                 return;
             }
@@ -874,7 +939,7 @@
                 loadProvinceMap(provAdcode, province);
                 locateTimer = setTimeout(() => {
                     mapChart.setOption({ geo: { center: coord, zoom: 1.6 } });
-                    highlightPoint(highlightName);
+                    highlightPoint(shortName(highlightName));
                 }, 500);
                 return;
             }
@@ -884,7 +949,7 @@
                 loadProvinceMap(provAdcode, province);
                 locateTimer = setTimeout(() => {
                     mapChart.setOption({ geo: { center: coord, zoom: 2.2 } });
-                    highlightPoint(highlightName);
+                    highlightPoint(shortName(highlightName));
                 }, 500);
                 return;
             }
@@ -897,11 +962,11 @@
                     loadCityMap(cityAdcode, city);
                     locateTimer = setTimeout(() => {
                         mapChart.setOption({ geo: { center: coord, zoom: 2.5 } });
-                        highlightPoint(highlightName);
+                        highlightPoint(shortName(highlightName));
                     }, 500);
                 } else {
                     mapChart.setOption({ geo: { center: coord, zoom: 2.2 } });
-                    highlightPoint(highlightName);
+                    highlightPoint(shortName(highlightName));
                 }
             }, 500);
         }
@@ -940,16 +1005,46 @@
             initWorldMap();
         };
 
+        // ========== 通用地图加载（带缓存） ==========
+        function loadMapJson(adcode, mapName) {
+            const cacheKey = adcode;
+            if (mapCache[cacheKey]) {
+                return Promise.resolve(mapCache[cacheKey]);
+            }
+            return fetch(`${MAP_BASE}/${adcode}_full.json`)
+                .then(res => {
+                    if (!res.ok) throw new Error('地图文件不存在');
+                    return res.json();
+                })
+                .then(geoJson => {
+                    mapCache[cacheKey] = geoJson;
+                    echarts.registerMap(mapName, geoJson);
+                    return geoJson;
+                });
+        }
+
         // ========== 1. 世界地图 ==========
         function initWorldMap() {
             showLoading();
             const lockKey = 'world';
             loadMapLock = lockKey;
 
-            fetch('/static/maps/world.json')
-                .then(res => res.json())
+            if (mapCache['world']) {
+                worldMapLoaded = true;
+                hideLoading();
+                renderWorldMap();
+                bindWorldClick();
+                return;
+            }
+
+            fetch(`${MAP_BASE}/world.json`)
+                .then(res => {
+                    if (!res.ok) throw new Error('世界地图文件不存在');
+                    return res.json();
+                })
                 .then(worldJson => {
                     if (loadMapLock !== lockKey) return;
+                    mapCache['world'] = worldJson;
                     echarts.registerMap('world', worldJson);
                     worldMapLoaded = true;
                     hideLoading();
@@ -959,7 +1054,7 @@
                 .catch(() => {
                     if (loadMapLock !== lockKey) return;
                     document.getElementById('mapLoading').innerHTML =
-                        '世界地图加载失败，请检查 /static/maps/world.json 是否存在<br/><button class="map-back-btn" style="position:static;display:inline-block;margin-top:8px;" onclick="initWorldMap()">重试</button>';
+                        '世界地图加载失败，请检查地图文件是否存在<br/><button onclick="initWorldMap()">重试</button>';
                 });
         }
 
@@ -981,8 +1076,7 @@
                         if (params.componentType === 'geo') {
                             return params.name;
                         }
-                        const count = allPoints.filter(p => (p.city || p.province) === params.name).length;
-                        return `${params.name}<br/>共 ${count} 位同学`;
+                        return getPointTooltip(params.name, 'world');
                     }
                 },
                 geo: {
@@ -1037,7 +1131,7 @@
             mapChart.on('click', function(params) {
                 if (params.componentType === 'geo') {
                     const name = params.name || '';
-                    if (name.toLowerCase() === 'china' || name === '中国') {
+                    if (name.toLowerCase() === 'china' || shortName(name) === '中国') {
                         loadChinaMap();
                     }
                 }
@@ -1050,12 +1144,10 @@
             const lockKey = 'china';
             loadMapLock = lockKey;
 
-            fetch('/static/maps/100000_full.json')
-                .then(res => res.json())
+            loadMapJson('100000', 'china')
                 .then(geoJson => {
                     if (loadMapLock !== lockKey) return;
                     currentGeoJson = geoJson;
-                    echarts.registerMap('china', geoJson);
                     hideLoading();
                     renderChinaMap();
                     bindProvinceClick(geoJson);
@@ -1063,7 +1155,7 @@
                 .catch(() => {
                     if (loadMapLock !== lockKey) return;
                     hideLoading();
-                    alert('中国地图加载失败，请检查 /static/maps/100000_full.json 是否存在');
+                    alert('中国地图加载失败，请检查地图文件是否存在');
                 });
         }
 
@@ -1085,8 +1177,7 @@
                         if (params.componentType === 'geo') {
                             return params.name;
                         }
-                        const count = allPoints.filter(p => p.province === params.name).length;
-                        return `${params.name}<br/>共 ${count} 位同学`;
+                        return getPointTooltip(params.name, 'country');
                     }
                 },
                 geo: {
@@ -1144,12 +1235,10 @@
             const lockKey = `prov_${adcode}`;
             loadMapLock = lockKey;
 
-            fetch(`/static/maps/${adcode}_full.json`)
-                .then(res => res.json())
+            loadMapJson(adcode, 'province')
                 .then(geoJson => {
                     if (loadMapLock !== lockKey) return;
                     currentGeoJson = geoJson;
-                    echarts.registerMap('province', geoJson);
                     hideLoading();
                     renderProvinceMap();
                     bindCityClick(geoJson);
@@ -1157,7 +1246,7 @@
                 .catch(() => {
                     if (loadMapLock !== lockKey) return;
                     hideLoading();
-                    alert(`省级地图加载失败，请检查 /static/maps/${adcode}_full.json 是否存在`);
+                    alert(`省级地图加载失败，请检查 ${adcode}_full.json 文件是否存在`);
                 });
         }
 
@@ -1177,8 +1266,7 @@
                         if (params.componentType === 'geo') {
                             return params.name;
                         }
-                        const count = allPoints.filter(p => p.city === params.name).length;
-                        return `${params.name}<br/>共 ${count} 位同学`;
+                        return getPointTooltip(params.name, 'province');
                     }
                 },
                 geo: {
@@ -1234,19 +1322,17 @@
             const lockKey = `city_${adcode}`;
             loadMapLock = lockKey;
 
-            fetch(`/static/maps/${adcode}_full.json`)
-                .then(res => res.json())
+            loadMapJson(adcode, 'city')
                 .then(geoJson => {
                     if (loadMapLock !== lockKey) return;
                     currentGeoJson = geoJson;
-                    echarts.registerMap('city', geoJson);
                     hideLoading();
                     renderCityMap();
                 })
                 .catch(() => {
                     if (loadMapLock !== lockKey) return;
                     hideLoading();
-                    alert(`市级地图加载失败，请检查 /static/maps/${adcode}_full.json 是否存在`);
+                    alert(`市级地图加载失败，请检查 ${adcode}_full.json 文件是否存在`);
                 });
         }
 
@@ -1266,8 +1352,7 @@
                         if (params.componentType === 'geo') {
                             return params.name;
                         }
-                        const count = allPoints.filter(p => p.district === params.name).length;
-                        return `${params.name}<br/>共 ${count} 位同学`;
+                        return getPointTooltip(params.name, 'city');
                     }
                 },
                 geo: {
@@ -1331,8 +1416,9 @@
 
         // ========== 工具函数 ==========
         function getAdcodeByName(geoJson, name) {
+            const targetShort = shortName(name);
             for (let feat of geoJson.features) {
-                if (feat.properties.name === name) {
+                if (shortName(feat.properties.name) === targetShort) {
                     return feat.properties.adcode;
                 }
             }
@@ -1341,7 +1427,7 @@
 
         function showLoading() {
             document.getElementById('mapLoading').style.display = 'block';
-            document.getElementById('mapLoading').textContent = '地图加载中...';
+            document.getElementById('mapLoading').innerHTML = '地图加载中...';
         }
         function hideLoading() {
             document.getElementById('mapLoading').style.display = 'none';
@@ -1349,15 +1435,13 @@
 
         // ========== 点位数据加载 ==========
         function loadMapPoints() {
-            fetch('/api/map/points')
-                .then(res => res.json())
+            request(`${API_BASE}/map/points`)
                 .then(data => {
                     allPoints = data.data;
                     document.getElementById('totalCount').textContent = allPoints.length;
                     if (worldMapLoaded && mapChart) {
                         refreshCurrentPoints();
                     }
-                    // 保持当前搜索关键词
                     const kw = document.getElementById('searchInput')?.value || '';
                     renderClassmatesList(kw);
                 });
@@ -1372,8 +1456,8 @@
 
         // ========== 个人信息 ==========
         function loadSelfInfo() {
-            document.getElementById('editName').value = currentUser.name;
-            document.getElementById('editCountry').value = currentUser.country;
+            document.getElementById('editName').value = currentUser.name || '';
+            document.getElementById('editCountry').value = currentUser.country || '';
             document.getElementById('editProvince').value = currentUser.province || '';
             document.getElementById('editCity').value = currentUser.city || '';
             document.getElementById('editDistrict').value = currentUser.district || '';
@@ -1381,25 +1465,31 @@
         }
 
         function saveSelfInfo() {
+            const name = document.getElementById('editName').value.trim();
+            const country = document.getElementById('editCountry').value.trim();
+
+            if (!name || !country) {
+                alert('姓名和国家为必填项');
+                return;
+            }
+
             const btn = document.getElementById('saveSelfBtn');
             btn.disabled = true;
             btn.textContent = '保存中...';
 
             const data = {
-                name: document.getElementById('editName').value,
-                country: document.getElementById('editCountry').value,
-                province: document.getElementById('editProvince').value,
-                city: document.getElementById('editCity').value,
-                district: document.getElementById('editDistrict').value,
-                message: document.getElementById('editMessage').value
+                name,
+                country,
+                province: document.getElementById('editProvince').value.trim(),
+                city: document.getElementById('editCity').value.trim(),
+                district: document.getElementById('editDistrict').value.trim(),
+                message: document.getElementById('editMessage').value.trim()
             };
 
-            fetch(`/api/user/self?username=${currentUser.username}`, {
+            request(`${API_BASE}/user/self?username=${encodeURIComponent(currentUser.username)}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             })
-            .then(res => res.json())
             .then(res => {
                 btn.disabled = false;
                 btn.textContent = '保存修改';
@@ -1411,13 +1501,12 @@
                         currentUser.name + '（' + (currentUser.role === 'admin' ? '管理员' : '成员') + '）';
                     loadMapPoints();
                 } else {
-                    alert(res.msg);
+                    alert(res.msg || '保存失败');
                 }
             })
             .catch(() => {
                 btn.disabled = false;
                 btn.textContent = '保存修改';
-                alert('保存失败，请检查网络');
             });
         }
 
@@ -1455,16 +1544,14 @@
             btn.disabled = true;
             btn.textContent = '修改中...';
 
-            fetch('/api/user/change-password', {
+            request(`${API_BASE}/user/change-password`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     username: currentUser.username,
                     oldPassword: oldPwd,
                     newPassword: newPwd
                 })
             })
-            .then(res => res.json())
             .then(res => {
                 btn.disabled = false;
                 btn.textContent = '确认修改';
@@ -1479,7 +1566,6 @@
             .catch(() => {
                 btn.disabled = false;
                 btn.textContent = '确认修改';
-                alert('修改失败，请检查网络');
             });
         }
 
@@ -1505,12 +1591,13 @@
 
         // ========== 管理员功能 ==========
         function loadAdminUserList() {
-            fetch(`/api/admin/users?admin_name=${currentUser.username}`)
-                .then(res => res.json())
+            request(`${API_BASE}/admin/users?admin_name=${encodeURIComponent(currentUser.username)}`)
                 .then(res => {
                     if (res.code === 200) {
                         adminUserList = res.data;
                         renderUserList(res.data);
+                    } else {
+                        alert(res.msg || '获取用户列表失败');
                     }
                 });
         }
@@ -1561,13 +1648,15 @@
         function resetUserPwd(username) {
             const newPwd = prompt('请输入新密码', '1233456');
             if (!newPwd) return;
+            if (newPwd.length < 6) {
+                alert('密码长度不能少于6位');
+                return;
+            }
 
-            fetch(`/api/admin/users/${username}?admin_name=${currentUser.username}`, {
+            request(`${API_BASE}/admin/users/${encodeURIComponent(username)}?admin_name=${encodeURIComponent(currentUser.username)}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ password: newPwd })
             })
-            .then(res => res.json())
             .then(res => {
                 alert(res.msg || '重置成功');
             });
@@ -1583,31 +1672,41 @@
         function saveAdminEdit() {
             if (!currentEditUsername) return;
 
+            const name = document.getElementById('adminEditName').value.trim();
+            const country = document.getElementById('adminEditCountry').value.trim();
+            if (!name || !country) {
+                alert('姓名和国家为必填项');
+                return;
+            }
+
             const btn = document.getElementById('saveAdminBtn');
             btn.disabled = true;
             btn.textContent = '保存中...';
 
             const data = {
-                name: document.getElementById('adminEditName').value,
-                country: document.getElementById('adminEditCountry').value,
-                province: document.getElementById('adminEditProvince').value,
-                city: document.getElementById('adminEditCity').value,
-                district: document.getElementById('adminEditDistrict').value,
-                message: document.getElementById('adminEditMessage').value
+                name,
+                country,
+                province: document.getElementById('adminEditProvince').value.trim(),
+                city: document.getElementById('adminEditCity').value.trim(),
+                district: document.getElementById('adminEditDistrict').value.trim(),
+                message: document.getElementById('adminEditMessage').value.trim()
             };
 
-            // 密码非空时才传递
             const pwdVal = document.getElementById('adminEditPassword').value.trim();
             if (pwdVal) {
+                if (pwdVal.length < 6) {
+                    alert('密码长度不能少于6位');
+                    btn.disabled = false;
+                    btn.textContent = '保存';
+                    return;
+                }
                 data.password = pwdVal;
             }
 
-            fetch(`/api/admin/users/${currentEditUsername}?admin_name=${currentUser.username}`, {
+            request(`${API_BASE}/admin/users/${encodeURIComponent(currentEditUsername)}?admin_name=${encodeURIComponent(currentUser.username)}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(data)
             })
-            .then(res => res.json())
             .then(res => {
                 btn.disabled = false;
                 btn.textContent = '保存';
@@ -1616,7 +1715,6 @@
                     closeAdminModal();
                     loadAdminUserList();
                     loadMapPoints();
-                    // 如果修改的是当前登录用户，同步更新本地信息
                     if (currentEditUsername === currentUser.username) {
                         currentUser = { ...currentUser, ...data };
                         localStorage.setItem('currentUser', JSON.stringify(currentUser));
@@ -1625,34 +1723,41 @@
                         loadSelfInfo();
                     }
                 } else {
-                    alert(res.msg);
+                    alert(res.msg || '修改失败');
                 }
             })
             .catch(err => {
                 btn.disabled = false;
                 btn.textContent = '保存';
-                alert('保存失败，请检查接口或本地服务');
                 console.error(err);
             });
         }
 
+        // 新增用户
         function showAddModal() {
             const username = prompt('请输入新用户账号：');
             if (!username) return;
             const password = prompt('请设置初始密码：', '1233456');
             if (!password) return;
+            if (password.length < 6) {
+                alert('初始密码长度不能少于6位');
+                return;
+            }
             const name = prompt('请输入用户姓名：');
             if (!name) return;
 
-            fetch('/api/user/change-password', {
-                method: 'POST', // 把 PUT 改回 POST
-                headers: {'Content-Type': 'application/json'},
-                credentials: 'include',
-                body: JSON.stringify({ username, password, name, country: '中国' })
+            request(`${API_BASE}/admin/users?admin_name=${encodeURIComponent(currentUser.username)}`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    username,
+                    password,
+                    name,
+                    country: '中国',
+                    role: 'user'
+                })
             })
-            .then(res => res.json())
             .then(res => {
-                alert(res.msg);
+                alert(res.msg || '新增成功');
                 if (res.code === 200) {
                     loadAdminUserList();
                     loadMapPoints();
@@ -1661,13 +1766,16 @@
         }
 
         function deleteUser(username) {
+            if (username === currentUser.username) {
+                alert('不能删除当前登录账号');
+                return;
+            }
             if (!confirm('确定要删除该用户吗？删除后不可恢复')) return;
-            fetch(`/api/admin/users/${username}?admin_name=${currentUser.username}`, {
+            request(`${API_BASE}/admin/users/${encodeURIComponent(username)}?admin_name=${encodeURIComponent(currentUser.username)}`, {
                 method: 'DELETE'
             })
-            .then(res => res.json())
             .then(res => {
-                alert(res.msg);
+                alert(res.msg || '删除成功');
                 loadAdminUserList();
                 loadMapPoints();
             });
