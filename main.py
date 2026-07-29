@@ -140,7 +140,7 @@ async def map_page(request: Request):
 
 
 @app.get("/change-password", response_class=HTMLResponse)
-async def change_password_page(request: Request, body: ChangePasswordReq):
+async def change_password_page(request: Request):
     return templates.TemplateResponse(request=request, name="change_password.html")
 
 
@@ -193,8 +193,11 @@ async def update_self(username: str, req: UserEditReq, db: Session = Depends(get
 
 
 # ========== 新增：普通用户修改自己的密码 ==========
-@app.post("/api/user/change-password")
+# 替换原有的 @app.post 行，兼容 POST/PUT 两种方法，以及带/不带末尾斜杠
+@app.api_route("/api/user/change-password", methods=["POST", "PUT"])
+@app.api_route("/api/user/change-password/", methods=["POST", "PUT"])
 async def change_password(req: ChangePasswordReq, db: Session = Depends(get_db)):
+    # 下方原有业务逻辑保持不变
     # 基础参数校验
     if not req.old_password or not req.new_password or not req.confirm_password:
         return {"code": 400, "msg": "所有密码项不能为空"}
