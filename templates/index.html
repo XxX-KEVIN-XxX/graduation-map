@@ -1454,7 +1454,7 @@
             else if (mapLevel === 'city') renderCityMap();
         }
 
-        // ========== 个人信息 ==========
+        // ========== 个人信息修改密码 ==========
         function loadSelfInfo() {
             document.getElementById('editName').value = currentUser.name || '';
             document.getElementById('editCountry').value = currentUser.country || '';
@@ -1510,18 +1510,6 @@
             });
         }
 
-        // ========== 个人修改密码 ==========
-        function showChangePwdModal() {
-            document.getElementById('oldPwd').value = '';
-            document.getElementById('newPwd').value = '';
-            document.getElementById('confirmNewPwd').value = '';
-            document.getElementById('changePwdModal').style.display = 'block';
-        }
-
-        function closeChangePwdModal() {
-            document.getElementById('changePwdModal').style.display = 'none';
-        }
-
         function submitChangePwd() {
             const oldPwd = document.getElementById('oldPwd').value.trim();
             const newPwd = document.getElementById('newPwd').value.trim();
@@ -1545,28 +1533,29 @@
             btn.textContent = '修改中...';
 
             request(`${API_BASE}/user/change-password`, {
-                method: 'PUT',
+                method: 'POST', // 修正1：改为POST，与后端一致
                 body: JSON.stringify({
                     username: currentUser.username,
-                    oldPassword: oldPwd,
-                    newPassword: newPwd
+                    old_password: oldPwd,       // 修正2：改为下划线命名，匹配后端
+                    new_password: newPwd,       // 修正2：改为下划线命名
+                    confirm_password: confirmPwd // 修正3：补充必填字段
                 })
             })
-            .then(res => {
-                btn.disabled = false;
-                btn.textContent = '确认修改';
-                if (res.code === 200) {
-                    alert('密码修改成功，请重新登录');
-                    closeChangePwdModal();
-                    logout();
-                } else {
-                    alert(res.msg || '密码修改失败');
-                }
-            })
-            .catch(() => {
-                btn.disabled = false;
-                btn.textContent = '确认修改';
-            });
+                    .then(res => {
+                        btn.disabled = false;
+                        btn.textContent = '确认修改';
+                        if (res.code === 200) {
+                            alert('密码修改成功，请重新登录');
+                            closeChangePwdModal();
+                            logout();
+                        } else {
+                            alert(res.msg || '密码修改失败');
+                        }
+                    })
+                    .catch(() => {
+                        btn.disabled = false;
+                        btn.textContent = '确认修改';
+                    });
         }
 
         // ========== 标签切换 ==========
