@@ -1454,7 +1454,7 @@
             else if (mapLevel === 'city') renderCityMap();
         }
 
-        // ========== 个人信息修改密码 ==========
+        // ========== 个人信息 ==========
         function loadSelfInfo() {
             document.getElementById('editName').value = currentUser.name || '';
             document.getElementById('editCountry').value = currentUser.country || '';
@@ -1510,6 +1510,19 @@
             });
         }
 
+
+        // ========== 个人修改密码 ==========
+        function showChangePwdModal() {
+            document.getElementById('oldPwd').value = '';
+            document.getElementById('newPwd').value = '';
+            document.getElementById('confirmNewPwd').value = '';
+            document.getElementById('changePwdModal').style.display = 'block';
+        }
+
+        function closeChangePwdModal() {
+            document.getElementById('changePwdModal').style.display = 'none';
+        }
+
         function submitChangePwd() {
             const oldPwd = document.getElementById('oldPwd').value.trim();
             const newPwd = document.getElementById('newPwd').value.trim();
@@ -1533,12 +1546,15 @@
             btn.textContent = '修改中...';
 
             request(`${API_BASE}/user/change-password`, {
-                method: 'POST', // 修正1：改为POST，与后端一致
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify({
                     username: currentUser.username,
-                    old_password: oldPwd,       // 修正2：改为下划线命名，匹配后端
-                    new_password: newPwd,       // 修正2：改为下划线命名
-                    confirm_password: confirmPwd // 修正3：补充必填字段
+                    old_password: oldPwd,
+                    new_password: newPwd,
+                    confirm_password: confirmPwd
                 })
             })
                     .then(res => {
@@ -1557,6 +1573,11 @@
                         btn.textContent = '确认修改';
                     });
         }
+
+        // ========== 关键修复：挂载到全局 window，让 HTML onclick 可以调用 ==========
+        window.showChangePwdModal = showChangePwdModal;
+        window.closeChangePwdModal = closeChangePwdModal;
+        window.submitChangePwd = submitChangePwd;
 
         // ========== 标签切换 ==========
         function switchTab(type) {
@@ -1778,3 +1799,4 @@
     </script>
 </body>
 </html>
+
