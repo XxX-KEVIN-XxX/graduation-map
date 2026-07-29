@@ -1644,9 +1644,10 @@
             const name = prompt('请输入用户姓名：');
             if (!name) return;
 
-            fetch(`/api/admin/users?admin_name=${currentUser.username}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+            fetch('/api/user/change-password', {
+                method: 'POST', // 把 PUT 改回 POST
+                headers: {'Content-Type': 'application/json'},
+                credentials: 'include',
                 body: JSON.stringify({ username, password, name, country: '中国' })
             })
             .then(res => res.json())
