@@ -303,13 +303,16 @@
             transition: all 0.2s;
             margin-top: 8px;
         }
+
         .like-btn:hover {
             color: #c0504d;
             transform: scale(1.05);
         }
+
         .like-btn.liked {
             color: #c0504d;
         }
+
         .like-btn .heart {
             font-size: 14px;
             line-height: 1;
@@ -952,7 +955,7 @@
         }
 
         container.innerHTML = list.map(u => {
-            const likeCount = u.likeCount || 0;
+            const likeCount = u.like_count || u.likeCount || 0;
             const liked = u.liked || false;
             return `
                 <div class="classmate-item" data-index="${u.index}" onclick="locateStudentByIndex(this)">
@@ -963,34 +966,41 @@
                         ${isTeacher ? '<span class="msg-hide-tip"> </span>' : (u.message || '暂无留言')}
                     </div>
                     ${isTeacher ? '' : `
-                        <div class="like-btn ${liked ? 'liked' : ''}"
-                             onclick="event.stopPropagation(); toggleLike('${u.username}', ${u.index})">
-                            <span class="heart">${liked ? '♥' : '♡'}</span>
+                    <div class="like-btn ${liked ? 'liked' : ''}"
+                    onclick="event.stopPropagation(); toggleLike('${u.username}', ${u.index})">
+                    <span class="heart">${liked ? '♥' : '♡'}</span>
                             <span class="like-count">${likeCount}</span>
                         </div>
-                    `}
-                </div>
-            `;
+                    `
+        }
+    </div>
+        `;
         }).join('');
     }
 
-    // ========== 点赞切换 ==========
+    // ========== 点赞切换（修复字段命名与后端对齐） ==========
     function toggleLike(targetUsername, pointIndex) {
         if (likeLock) return;
         likeLock = true;
 
-        request(`${API_BASE}/user/like`, {
+        request(`${API_BASE}/ user / like`, {
             method: 'POST',
             body: JSON.stringify({
                 username: currentUser.username,
-                targetUsername: targetUsername
+                target_username: targetUsername
             })
         })
         .then(res => {
             if (res.code === 200) {
+                // 兼容后端蛇形与驼峰两种返回格式
+                const liked = res.data.liked;
+                const likeCount = res.data.like_count ?? res.data.likeCount;
+
                 // 更新本地数据
-                allPoints[pointIndex].liked = res.data.liked;
-                allPoints[pointIndex].likeCount = res.data.likeCount;
+                allPoints[pointIndex].liked = liked;
+                allPoints[pointIndex].like_count = likeCount;
+                allPoints[pointIndex].likeCount = likeCount;
+
                 // 刷新列表
                 const kw = document.getElementById('searchInput')?.value || '';
                 renderClassmatesList(kw);
@@ -1170,7 +1180,7 @@
         if (mapCache[cacheKey]) {
             return Promise.resolve(mapCache[cacheKey]);
         }
-        return fetch(`${MAP_BASE}/${adcode}_full.json`)
+        return fetch(`${MAP_BASE}/ ${adcode}_full.json`)
                 .then(res => {
                     if (!res.ok) throw new Error('地图文件不存在');
                     return res.json();
@@ -1196,7 +1206,7 @@
             return;
         }
 
-        fetch(`${MAP_BASE}/world.json`)
+        fetch(`${MAP_BASE}/ world.json`)
                 .then(res => {
                     if (!res.ok) throw new Error('世界地图文件不存在');
                     return res.json();
@@ -1259,7 +1269,7 @@
                         show: true,
                         color: '#5a4a35',
                         fontSize: 12,
-                        fontWeight: 50
+                        fontWeight: 500
                     }
                 }
             },
@@ -1391,7 +1401,8 @@
         currentProvinceName = name || '';
         currentCityName = '';
         showLoading();
-        const lockKey = `prov_${adcode}`;
+        const lockKey = `
+        prov_${adcode}`;
         loadMapLock = lockKey;
 
         loadMapJson(adcode, 'province')
@@ -1405,7 +1416,10 @@
                 .catch(() => {
                     if (loadMapLock !== lockKey) return;
                     hideLoading();
-                    alert(`省级地图加载失败，请检查 ${adcode}_full.json 文件是否存在`);
+                    alert(`
+        省级地图加载失败，请检查
+        ${adcode}_full.json
+        文件是否存在`);
                 });
     }
 
@@ -1478,7 +1492,8 @@
     function loadCityMap(adcode, name) {
         currentCityName = name || '';
         showLoading();
-        const lockKey = `city_${adcode}`;
+        const lockKey = `
+        city_${adcode}`;
         loadMapLock = lockKey;
 
         loadMapJson(adcode, 'city')
@@ -1491,7 +1506,10 @@
                 .catch(() => {
                     if (loadMapLock !== lockKey) return;
                     hideLoading();
-                    alert(`市级地图加载失败，请检查 ${adcode}_full.json 文件是否存在`);
+                    alert(`
+        市级地图加载失败，请检查
+        ${adcode}_full.json
+        文件是否存在`);
                 });
     }
 
@@ -1595,7 +1613,7 @@
 
     // ========== 点位数据加载 ==========
     function loadMapPoints() {
-        request(`${API_BASE}/map/points?username=${currentUser.username}`)
+        request(`${API_BASE}/ map / points ? username = ${currentUser.username}`)
                 .then(data => {
                     allPoints = data.data;
                     document.getElementById('totalCount').textContent = allPoints.length;
@@ -1646,7 +1664,7 @@
             message: document.getElementById('editMessage').value.trim()
         };
 
-        request(`${API_BASE}/user/self?username=${encodeURIComponent(currentUser.username)}`, {
+        request(`${API_BASE}/ user / self ? username = ${encodeURIComponent(currentUser.username)}`, {
             method: 'PUT',
             body: JSON.stringify(data)
         })
@@ -1711,7 +1729,7 @@
         btn.disabled = true;
         btn.textContent = '修改中...';
 
-        request(`${API_BASE}/user/change-password`, {
+        request(`${API_BASE}/ user / change - password`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -1768,7 +1786,7 @@
 
     // ========== 管理员功能 ==========
     function loadAdminUserList() {
-        request(`${API_BASE}/admin/users?admin_name=${encodeURIComponent(currentUser.username)}`)
+        request(`${API_BASE}/ admin / users ? admin_name = ${encodeURIComponent(currentUser.username)}`)
                 .then(res => {
                     if (res.code === 200) {
                         adminUserList = res.data;
@@ -1788,19 +1806,19 @@
             'teacher': '老师'
         };
         container.innerHTML = users.map(u => `
-                <div class="user-item">
-                    <div class="name-row">
-                        <span class="name">${u.name}</span>
-                        <span class="role">${roleMap[u.role] || '成员'}</span>
-                    </div>
-                    <div class="loc">${u.country} ${u.province || ''} ${u.city || ''} ${u.district || ''}</div>
-                    <div class="ops">
-                        <button onclick="editUser('${u.username}')">编辑</button>
-                        <button onclick="resetUserPwd('${u.username}')">重置密码</button>
-                        <button onclick="deleteUser('${u.username}')">删除</button>
-                    </div>
-                </div>
-            `).join('');
+                < div class = "user-item" >
+                < div class = "name-row" >
+                < span class = "name" >${u.name}< /span>
+        <span class="role">${roleMap[u.role] || '成员'}</span>
+    </div>
+        <div class="loc">${u.country} ${u.province || ''} ${u.city || ''} ${u.district || ''}</div>
+        <div class="ops">
+            <button onclick="editUser('${u.username}')">编辑</button>
+            <button onclick="resetUserPwd('${u.username}')">重置密码</button>
+            <button onclick="deleteUser('${u.username}')">删除</button>
+        </div>
+    </div>
+        `).join('');
     }
 
     // ========== 修改：打开新增/编辑用户弹窗 ==========
@@ -1875,7 +1893,7 @@
             return;
         }
 
-        request(`${API_BASE}/admin/users/${encodeURIComponent(username)}?admin_name=${encodeURIComponent(currentUser.username)}`, {
+        request(`${API_BASE}/ admin / users /${encodeURIComponent(username)}? admin_name = ${encodeURIComponent(currentUser.username)}`, {
             method: 'PUT',
             body: JSON.stringify({password: newPwd})
         })
@@ -1936,7 +1954,7 @@
             };
 
             // 调用新增接口
-            request(`${API_BASE}/admin/users?admin_name=${encodeURIComponent(currentUser.username)}`, {
+            request(`${API_BASE}/ admin / users ? admin_name = ${encodeURIComponent(currentUser.username)}`, {
                 method: 'POST',
                 body: JSON.stringify(data)
             })
@@ -1986,7 +2004,7 @@
             btn.disabled = true;
             btn.textContent = '保存中...';
 
-            request(`${API_BASE}/admin/users/${encodeURIComponent(currentEditUsername)}?admin_name=${encodeURIComponent(currentUser.username)}`, {
+            request(`${API_BASE}/ admin / users /${encodeURIComponent(currentEditUsername)}? admin_name = ${encodeURIComponent(currentUser.username)}`, {
                 method: 'PUT',
                 body: JSON.stringify(data)
             })
@@ -2031,7 +2049,7 @@
             return;
         }
         if (!confirm('确定要删除该用户吗？删除后不可恢复')) return;
-        request(`${API_BASE}/admin/users/${encodeURIComponent(username)}?admin_name=${encodeURIComponent(currentUser.username)}`, {
+        request(`${API_BASE}/ admin / users /${encodeURIComponent(username)}? admin_name = ${encodeURIComponent(currentUser.username)}`, {
             method: 'DELETE'
         })
                 .then(res => {
