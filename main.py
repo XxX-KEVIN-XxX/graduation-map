@@ -13,7 +13,9 @@ from sqlalchemy.orm import sessionmaker, Session
 
 # ========== 初始化应用 ==========
 app = FastAPI(title="毕业地图")
-templates = Jinja2Templates(directory="templates")
+# 以当前 py 文件所在目录为基准，构造绝对路径
+BASE_DIR = Path(__file__).resolve().parent
+templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
 # 跨域配置
 app.add_middleware(
