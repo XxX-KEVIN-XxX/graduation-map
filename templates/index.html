@@ -932,7 +932,7 @@
                     <div class="classmate-loc">${u.country} ${u.province || ''} ${u.city || ''} ${u.district || ''}</div>
                     <!-- ========== 修改：老师账号显示不可查看提示，否则显示原留言 ========== -->
                     <div class="classmate-msg">
-                        ${isTeacher ? '<span class="msg-hide-tip">老师暂不可查看毕业留言</span>' : (u.message || '暂无留言')}
+                        ${isTeacher ? '<span class="msg-hide-tip"> </span>' : (u.message || '暂无留言')}
                     </div>
                 </div>
             `).join('');
