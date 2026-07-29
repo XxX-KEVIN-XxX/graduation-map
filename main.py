@@ -9,7 +9,7 @@ from typing import Optional
 from pathlib import Path
 
 # ========== 数据库相关导入 ==========
-from sqlalchemy import create_engine, Column, Integer, String, Text
+from sqlalchemy import create_engine, Column, Integer, String, Text, UniqueConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 
@@ -48,6 +48,7 @@ engine = create_engine(
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
+
 # ========== 数据库表模型 ==========
 class UserDB(Base):
     __tablename__ = "users"
@@ -62,8 +63,22 @@ class UserDB(Base):
     message = Column(Text, default="")
     role = Column(String(20), default="user")
 
+
+# 新增：点赞关系表
+class LikeDB(Base):
+    __tablename__ = "likes"
+    id = Column(Integer, primary_key=True, index=True)
+    from_username = Column(String(50), nullable=False, index=True)  # 点赞者
+    to_username = Column(String(50), nullable=False, index=True)  # 被点赞者
+    # 联合唯一约束：一个用户只能给另一个用户点一次赞
+    __table_args__ = (
+        UniqueConstraint('from_username', 'to_username', name='uq_from_to'),
+    )
+
+
 # 启动时自动建表
 Base.metadata.create_all(bind=engine)
+
 
 # 数据库会话依赖
 def get_db():
@@ -72,6 +87,7 @@ def get_db():
         yield db
     finally:
         db.close()
+
 
 # ========== 初始化默认管理员 ==========
 def init_default_admin():
@@ -97,12 +113,15 @@ def init_default_admin():
         print("✅ 已创建默认管理员账号")
     db.close()
 
+
 init_default_admin()
+
 
 # ========== 请求数据模型 ==========
 class LoginReq(BaseModel):
     username: str
     password: str
+
 
 class UserEditReq(BaseModel):
     # 管理员编辑时禁止修改密码，普通用户修改密码走专用接口
@@ -113,10 +132,12 @@ class UserEditReq(BaseModel):
     district: Optional[str] = None
     message: Optional[str] = None
 
+
 class UserCreateReq(UserEditReq):
     username: str
     password: str
     role: str = "user"
+
 
 # 新增：修改密码专用请求模型
 class ChangePasswordReq(BaseModel):
@@ -125,22 +146,27 @@ class ChangePasswordReq(BaseModel):
     new_password: str
     confirm_password: str
 
+
 # ========== 页面路由 ==========
 @app.get("/", response_class=HTMLResponse)
 async def login_page(request: Request):
     return templates.TemplateResponse(request=request, name="login.html")
 
+
 @app.get("/index", response_class=HTMLResponse)
 async def map_page(request: Request):
     return templates.TemplateResponse(request=request, name="index.html")
+
 
 @app.get("/change-password", response_class=HTMLResponse)
 async def change_password_page(request: Request):
     return templates.TemplateResponse(request=request, name="change_password.html")
 
+
 @app.get("/admin-users", response_class=HTMLResponse)
 async def admin_users_page(request: Request):
     return templates.TemplateResponse(request=request, name="admin_users.html")
+
 
 # ========== 登录接口 ==========
 @app.post("/api/auth/login")
@@ -159,6 +185,7 @@ async def login(req: LoginReq, db: Session = Depends(get_db)):
         "role": user.role
     }
     return {"code": 200, "msg": "登录成功", "data": user_info}
+
 
 # ========== 普通用户：修改自己的信息（不含密码） ==========
 @app.put("/api/user/self")
@@ -183,6 +210,7 @@ async def update_self(username: str, req: UserEditReq, db: Session = Depends(get
     }
     return {"code": 200, "msg": "保存成功", "data": new_info}
 
+
 # ========== 普通用户修改自己的密码 ==========
 @app.api_route("/api/user/change-password", methods=["POST", "PUT"])
 @app.api_route("/api/user/change-password/", methods=["POST", "PUT"])
@@ -206,6 +234,7 @@ async def change_password(req: ChangePasswordReq, db: Session = Depends(get_db))
     db.commit()
     return {"code": 200, "msg": "密码修改成功，请重新登录"}
 
+
 # ========== 管理员：用户管理接口 ==========
 # 管理员查看用户列表（包含密码，仅查看）
 @app.get("/api/admin/users")
@@ -216,19 +245,23 @@ async def get_all_users(admin_name: str, db: Session = Depends(get_db)):
     users = db.query(UserDB).all()
     user_list = []
     for user in users:
+        # 附带获赞数
+        like_count = db.query(LikeDB).filter(LikeDB.to_username == user.username).count()
         user_list.append({
             "id": user.id,
             "username": user.username,
-            "password": user.password,  # 管理员可见密码
+            "password": user.password,
             "name": user.name,
             "country": user.country,
             "province": user.province,
             "city": user.city,
             "district": user.district,
             "message": user.message,
-            "role": user.role
+            "role": user.role,
+            "like_count": like_count
         })
     return {"code": 200, "data": user_list}
+
 
 # 管理员添加用户（可设置初始密码，角色可设为 user / teacher）
 @app.post("/api/admin/users")
@@ -244,6 +277,7 @@ async def add_user(admin_name: str, req: UserCreateReq, db: Session = Depends(ge
     db.add(new_user)
     db.commit()
     return {"code": 200, "msg": "用户添加成功"}
+
 
 # 管理员编辑用户（禁止修改密码，仅能修改基础信息）
 @app.put("/api/admin/users/{target_user}")
@@ -261,6 +295,7 @@ async def edit_user(admin_name: str, target_user: str, req: UserEditReq, db: Ses
     db.commit()
     return {"code": 200, "msg": "修改成功"}
 
+
 # 管理员删除用户
 @app.delete("/api/admin/users/{target_user}")
 async def remove_user(admin_name: str, target_user: str, db: Session = Depends(get_db)):
@@ -272,9 +307,92 @@ async def remove_user(admin_name: str, target_user: str, db: Session = Depends(g
     user = db.query(UserDB).filter(UserDB.username == target_user).first()
     if not user:
         return {"code": 404, "msg": "用户不存在"}
+    # 删除用户同时删除其相关点赞记录
+    db.query(LikeDB).filter(
+        (LikeDB.from_username == target_user) | (LikeDB.to_username == target_user)
+    ).delete(synchronize_session=False)
     db.delete(user)
     db.commit()
     return {"code": 200, "msg": "删除成功"}
+
+
+# ========== 新增：点赞功能接口 ==========
+# 点赞/取消点赞（切换）
+@app.post("/api/like/{to_username}")
+async def toggle_like(from_username: str, to_username: str, db: Session = Depends(get_db)):
+    # 校验点赞者是否存在
+    from_user = db.query(UserDB).filter(UserDB.username == from_username).first()
+    if not from_user:
+        return {"code": 404, "msg": "点赞者账号不存在"}
+
+    # 权限校验：老师角色不能点赞
+    if from_user.role == "teacher":
+        return {"code": 403, "msg": "老师角色无法进行点赞操作"}
+
+    # 校验被点赞者是否存在
+    to_user = db.query(UserDB).filter(UserDB.username == to_username).first()
+    if not to_user:
+        return {"code": 404, "msg": "被点赞用户不存在"}
+
+    # 不能给自己点赞
+    if from_username == to_username:
+        return {"code": 400, "msg": "不能给自己点赞"}
+
+    # 查询是否已点赞
+    exist_like = db.query(LikeDB).filter(
+        LikeDB.from_username == from_username,
+        LikeDB.to_username == to_username
+    ).first()
+
+    if exist_like:
+        # 已点赞 → 取消点赞
+        db.delete(exist_like)
+        db.commit()
+        liked = False
+        msg = "取消点赞成功"
+    else:
+        # 未点赞 → 新增点赞
+        new_like = LikeDB(from_username=from_username, to_username=to_username)
+        db.add(new_like)
+        db.commit()
+        liked = True
+        msg = "点赞成功"
+
+    # 返回最新获赞数
+    like_count = db.query(LikeDB).filter(LikeDB.to_username == to_username).count()
+    return {
+        "code": 200,
+        "msg": msg,
+        "data": {
+            "liked": liked,
+            "like_count": like_count
+        }
+    }
+
+
+# 查询某用户获赞数 + 当前用户是否已点赞
+@app.get("/api/like/status/{to_username}")
+async def get_like_status(to_username: str, from_username: Optional[str] = None, db: Session = Depends(get_db)):
+    # 获赞总数
+    like_count = db.query(LikeDB).filter(LikeDB.to_username == to_username).count()
+
+    # 当前用户是否已点赞
+    liked = False
+    if from_username:
+        exist = db.query(LikeDB).filter(
+            LikeDB.from_username == from_username,
+            LikeDB.to_username == to_username
+        ).first()
+        liked = exist is not None
+
+    return {
+        "code": 200,
+        "data": {
+            "like_count": like_count,
+            "liked": liked
+        }
+    }
+
 
 # ========== 获取所有用户位置（地图渲染用，老师角色屏蔽毕业留言） ==========
 @app.get("/api/map/points")
@@ -286,18 +404,29 @@ async def get_map_points(username: Optional[str] = None, db: Session = Depends(g
         current_user = db.query(UserDB).filter(UserDB.username == username).first()
         if current_user and current_user.role == "teacher":
             is_teacher = True
+
+    # 预计算所有用户获赞数，提升性能
+    like_counts = {}
+    like_records = db.query(LikeDB).all()
+    for record in like_records:
+        like_counts[record.to_username] = like_counts.get(record.to_username, 0) + 1
+
     points = []
     for user in users:
         points.append({
+            "username": user.username,
             "name": user.name,
             "country": user.country,
             "province": user.province,
             "city": user.city,
             "district": user.district,
             # 老师角色屏蔽毕业留言，返回空字符串；其他角色正常返回
-            "message": user.message if not is_teacher else ""
+            "message": user.message if not is_teacher else "",
+            # 新增：获赞数
+            "like_count": like_counts.get(user.username, 0)
         })
     return {"code": 200, "data": points}
+
 
 # ========== 退出登录接口 ==========
 @app.post("/api/auth/logout")
@@ -305,9 +434,11 @@ async def logout():
     # 前端清除localStorage即可，后端无session，直接返回成功
     return {"code": 200, "msg": "退出成功"}
 
+
 # ========== 启动入口 ==========
 if __name__ == '__main__':
     import uvicorn
+
     # 自动读取Render分配的端口，本地默认5000
     port = int(os.environ.get("PORT", 5000))
     uvicorn.run(app, host="0.0.0.0", port=port)
