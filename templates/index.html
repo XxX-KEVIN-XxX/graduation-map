@@ -1437,7 +1437,7 @@
 
         // ========== 点位数据加载 ==========
         function loadMapPoints() {
-            request(`${API_BASE}/map/points`)
+            request(`${API_BASE}/map/points?username=${currentUser.username}`)
                 .then(data => {
                     allPoints = data.data;
                     document.getElementById('totalCount').textContent = allPoints.length;
