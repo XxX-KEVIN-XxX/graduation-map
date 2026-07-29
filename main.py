@@ -140,7 +140,7 @@ async def map_page(request: Request):
 
 
 @app.get("/change-password", response_class=HTMLResponse)
-async def change_password_page(request: Request):
+async def change_password_page(request: Request, body: ChangePasswordReq):
     return templates.TemplateResponse(request=request, name="change_password.html")
 
 
