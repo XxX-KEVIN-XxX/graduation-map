@@ -731,12 +731,7 @@
         }
 
         // ========== 数据聚合函数 ==========
-// 示例：在处理后端返回的 points 数据时，先过滤无效地址
-        function processMapPoints(points) {
-            const validPoints = points.filter(item => {
-             // 只要国家/省份/城市/区县任意一个非空，就算有效地址；全空则过滤
-            return item.country || item.province || item.city || item.district;
-        });
+
         function formatWorldPoints() {
             const cityMap = {};
             allPoints.forEach(p => {
