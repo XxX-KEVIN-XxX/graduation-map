@@ -11,6 +11,11 @@ from sqlalchemy import create_engine, Column, Integer, String, Text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, Session
 
+#path
+from pathlib import Path
+from fastapi import FastAPI, Request
+from fastapi.templating import Jinja2Templates
+
 # ========== 初始化应用 ==========
 app = FastAPI(title="毕业地图")
 # 以当前 py 文件所在目录为基准，构造绝对路径
