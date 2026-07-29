@@ -129,7 +129,7 @@ async def login_page(request: Request):
 
 @app.get("/index", response_class=HTMLResponse)
 async def map_page(request: Request):
-    return templates.TemplateResponse(request=request, name="index.html")
+    return templates.TemplateResponse(request=request, name="index_yuanxian.html")
 
 
 @app.get("/change-password", response_class=HTMLResponse)
