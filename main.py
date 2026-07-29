@@ -69,15 +69,23 @@ def init_default_admin():
     db = SessionLocal()
     admin_exist = db.query(UserDB).filter(UserDB.role == "admin").first()
     if not admin_exist:
+        # 默认主管理员
         default_admin = UserDB(
             username="xuekecheng",
             password="123456",
             name="薛可成",
             role="admin"
         )
-        db.add(default_admin)
+        # 新增的第二个默认管理员
+        second_admin = UserDB(
+            username="柳成荫",
+            password="123456",
+            name="柳成荫",
+            role="admin"
+        )
+        db.add_all([default_admin, second_admin])
         db.commit()
-        print("✅ 已创建默认管理员：xuekecheng / 123456")
+        print("✅ 已创建默认管理员账号")
     db.close()
 init_default_admin()
 # ========== 请求数据模型 ==========
