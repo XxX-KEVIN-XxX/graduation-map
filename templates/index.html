@@ -1704,7 +1704,7 @@
             }
 
             request(`${API_BASE}/admin/users/${encodeURIComponent(currentEditUsername)}?admin_name=${encodeURIComponent(currentUser.username)}`, {
-                method: 'PUT',
+                method: 'POST',
                 body: JSON.stringify(data)
             })
             .then(res => {
