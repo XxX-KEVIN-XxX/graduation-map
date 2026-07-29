@@ -1391,7 +1391,7 @@
         currentProvinceName = name || '';
         currentCityName = '';
         showLoading();
-        const lockKey = `prov_${adcode};
+        const lockKey = `prov_${adcode}`;
         loadMapLock = lockKey;
 
         loadMapJson(adcode, 'province')
