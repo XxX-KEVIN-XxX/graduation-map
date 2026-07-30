@@ -7,7 +7,7 @@
     <script src="https://cdn.bootcdn.net/ajax/libs/echarts/5.4.3/echarts.min.js">
     </script>
     <style>
-        /* ===== 全局重置 & 基础 ===== */
+        /* ===== 全局 ===== */
         * {
             margin: 0;
             padding: 0;
@@ -15,30 +15,28 @@
         }
 
         :root {
-            --bg-primary: #f6f1ea;
-            --bg-card: #ffffff;
-            --bg-card-alt: #faf7f2;
-            --bg-hover: #f0e8de;
+            --bg-primary: #f5f0ea;
+            --bg-card: rgba(255, 253, 250, 0.75);
+            --bg-card-solid: #fffdfa;
             --bg-input: #f8f5f0;
-            --border-light: #e5ddd4;
-            --border-medium: #d5cbbc;
-            --text-primary: #2d2822;
+            --bg-hover: #eee8e0;
+            --border-light: rgba(210, 200, 188, 0.4);
+            --border-medium: #d2c8bc;
+            --text-primary: #2c2520;
             --text-secondary: #6b5f52;
             --text-muted: #9a8b7a;
-            --accent-blue: #5b9aa8;
-            --accent-blue-light: #e6f0f3;
+            --accent-blue: #4d8f9e;
             --accent-red: #c45a4a;
-            --accent-red-light: #f5e6e3;
             --accent-gold: #b8a08a;
-            --shadow-sm: 0 2px 8px rgba(45, 40, 34, 0.06);
-            --shadow-md: 0 4px 20px rgba(45, 40, 34, 0.08);
-            --shadow-lg: 0 8px 40px rgba(45, 40, 34, 0.12);
-            --radius-sm: 6px;
-            --radius-md: 10px;
-            --radius-lg: 16px;
-            --transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            --font-serif: "Noto Serif SC", "Songti SC", "SimSun", serif;
-            --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            --shadow-sm: 0 2px 10px rgba(44, 37, 32, 0.06);
+            --shadow-md: 0 6px 30px rgba(44, 37, 32, 0.08);
+            --shadow-lg: 0 12px 50px rgba(44, 37, 32, 0.14);
+            --radius-sm: 8px;
+            --radius-md: 14px;
+            --radius-lg: 20px;
+            --transition: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            --font-serif: "Georgia", "Noto Serif SC", "Songti SC", serif;
         }
 
         html,
@@ -49,23 +47,24 @@
 
         body {
             background: var(--bg-primary);
+            background-image: radial-gradient(circle at 20% 30%, rgba(210, 200, 188, 0.15) 0%, transparent 60%),
+                radial-gradient(circle at 80% 70%, rgba(180, 170, 158, 0.10) 0%, transparent 50%);
             font-family: var(--font-sans);
             color: var(--text-primary);
             -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
         }
 
         /* ===== 滚动条 ===== */
         ::-webkit-scrollbar {
-            width: 5px;
-            height: 5px;
+            width: 4px;
+            height: 4px;
         }
         ::-webkit-scrollbar-track {
             background: transparent;
         }
         ::-webkit-scrollbar-thumb {
             background: var(--border-medium);
-            border-radius: 10px;
+            border-radius: 20px;
         }
         ::-webkit-scrollbar-thumb:hover {
             background: var(--text-muted);
@@ -73,15 +72,15 @@
 
         /* ===== Header ===== */
         .header {
-            height: 80px;
-            padding: 0 36px;
+            height: 76px;
+            padding: 0 32px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            background: rgba(255, 253, 248, 0.80);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-bottom: 1px solid rgba(229, 221, 212, 0.5);
+            background: rgba(255, 253, 250, 0.70);
+            backdrop-filter: blur(16px) saturate(1.2);
+            -webkit-backdrop-filter: blur(16px) saturate(1.2);
+            border-bottom: 1px solid rgba(210, 200, 188, 0.25);
             position: relative;
             z-index: 20;
             flex-shrink: 0;
@@ -91,19 +90,18 @@
             content: '';
             position: absolute;
             bottom: 0;
-            left: 0;
-            right: 0;
+            left: 10%;
+            right: 10%;
             height: 1px;
-            background: linear-gradient(90deg, transparent, var(--border-light), transparent);
+            background: linear-gradient(90deg, transparent, rgba(210, 200, 188, 0.4), transparent);
         }
 
         .header-left h2 {
             font-family: var(--font-serif);
             font-size: 22px;
             font-weight: 600;
-            letter-spacing: 3px;
+            letter-spacing: 2px;
             color: var(--text-primary);
-            margin-bottom: 2px;
         }
 
         .header-left h2 span {
@@ -116,28 +114,31 @@
             color: var(--text-muted);
             letter-spacing: 2px;
             font-weight: 400;
+            margin-top: 1px;
         }
 
         .header-right {
             display: flex;
             align-items: center;
-            gap: 18px;
+            gap: 16px;
             font-size: 13px;
         }
 
         .user-info {
             color: var(--text-secondary);
             font-weight: 450;
-            padding: 4px 12px;
-            background: var(--bg-input);
-            border-radius: 20px;
+            padding: 5px 16px;
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(4px);
+            border-radius: 30px;
             font-size: 13px;
+            border: 1px solid rgba(210, 200, 188, 0.2);
         }
 
         .logout-btn {
-            padding: 6px 18px;
-            border: 1px solid var(--border-medium);
-            border-radius: 20px;
+            padding: 6px 20px;
+            border: 1px solid rgba(210, 200, 188, 0.4);
+            border-radius: 30px;
             background: transparent;
             color: var(--text-secondary);
             cursor: pointer;
@@ -145,7 +146,7 @@
             font-size: 12px;
             font-weight: 450;
             transition: all var(--transition);
-            letter-spacing: 0.5px;
+            backdrop-filter: blur(4px);
         }
 
         .logout-btn:hover {
@@ -156,20 +157,20 @@
             box-shadow: var(--shadow-sm);
         }
 
-        /* ===== Main Layout ===== */
+        /* ===== Main ===== */
         .main {
             display: flex;
-            height: calc(100vh - 80px);
+            height: calc(100vh - 76px);
             gap: 0;
-            background: var(--bg-primary);
+            background: transparent;
         }
 
-        /* ===== Map Container ===== */
+        /* ===== Map ===== */
         .map-container {
             flex: 1;
             position: relative;
-            background: var(--bg-primary);
             min-width: 0;
+            background: transparent;
         }
 
         #map {
@@ -178,17 +179,17 @@
             border-radius: 0;
         }
 
-        /* ===== Map Back Button ===== */
+        /* 地图工具提示全局覆盖（通过echarts配置已优化，额外样式） */
         .map-back-btn {
             position: absolute;
             top: 20px;
             left: 24px;
-            padding: 8px 18px;
-            background: rgba(255, 253, 248, 0.85);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            border: 1px solid rgba(229, 221, 212, 0.6);
-            border-radius: 24px;
+            padding: 8px 20px;
+            background: rgba(255, 253, 250, 0.80);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(210, 200, 188, 0.3);
+            border-radius: 30px;
             cursor: pointer;
             font-size: 12px;
             color: var(--text-secondary);
@@ -205,10 +206,9 @@
             background: #ffffff;
             border-color: var(--border-medium);
             box-shadow: var(--shadow-md);
-            transform: translateY(-1px);
+            transform: translateY(-2px);
         }
 
-        /* ===== Map Loading ===== */
         .map-loading {
             position: absolute;
             top: 50%;
@@ -217,25 +217,25 @@
             color: var(--text-secondary);
             font-size: 13px;
             z-index: 9;
-            background: rgba(255, 253, 248, 0.92);
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
-            padding: 16px 32px;
+            background: rgba(255, 253, 250, 0.90);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            padding: 18px 36px;
             border-radius: var(--radius-md);
-            border: 1px solid rgba(229, 221, 212, 0.5);
+            border: 1px solid rgba(210, 200, 188, 0.2);
             display: none;
             text-align: center;
             line-height: 1.8;
             box-shadow: var(--shadow-lg);
-            min-width: 160px;
+            min-width: 170px;
         }
 
         .map-loading button {
             margin-top: 10px;
-            padding: 5px 16px;
+            padding: 5px 18px;
             border: 1px solid var(--border-medium);
             background: #fff;
-            border-radius: 20px;
+            border-radius: 30px;
             color: var(--text-secondary);
             cursor: pointer;
             font-family: var(--font-sans);
@@ -249,7 +249,6 @@
             border-color: var(--text-primary);
         }
 
-        /* ===== Map Stats ===== */
         .map-stats {
             position: absolute;
             bottom: 32px;
@@ -264,20 +263,20 @@
             letter-spacing: 3px;
             text-transform: uppercase;
             font-weight: 400;
-            margin-bottom: 2px;
+            opacity: 0.7;
         }
 
         .map-stats .cn {
             font-size: 28px;
             font-weight: 600;
-            letter-spacing: 4px;
+            letter-spacing: 3px;
             font-family: var(--font-serif);
             color: var(--text-primary);
-            position: relative;
+            text-shadow: 0 2px 8px rgba(255, 253, 250, 0.3);
         }
 
         .map-stats .count {
-            font-size: 18px;
+            font-size: 20px;
             color: var(--accent-red);
             font-weight: 700;
             margin-left: 4px;
@@ -286,12 +285,12 @@
 
         /* ===== Sidebar ===== */
         .sidebar {
-            width: 360px;
-            background: rgba(255, 253, 248, 0.70);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-left: 1px solid rgba(229, 221, 212, 0.5);
-            padding: 24px 20px;
+            width: 370px;
+            background: rgba(255, 253, 250, 0.60);
+            backdrop-filter: blur(20px) saturate(1.3);
+            -webkit-backdrop-filter: blur(20px) saturate(1.3);
+            border-left: 1px solid rgba(210, 200, 188, 0.2);
+            padding: 24px 22px;
             overflow-y: auto;
             flex-shrink: 0;
             display: flex;
@@ -301,18 +300,20 @@
         /* ===== Tab Bar ===== */
         .tab-bar {
             display: flex;
-            gap: 6px;
-            margin-bottom: 20px;
+            gap: 4px;
+            margin-bottom: 22px;
             padding: 4px;
-            background: var(--bg-input);
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(4px);
             border-radius: var(--radius-md);
             flex-shrink: 0;
+            border: 1px solid rgba(210, 200, 188, 0.15);
         }
 
         .tab-item {
             flex: 1;
             text-align: center;
-            padding: 8px 0;
+            padding: 9px 0;
             font-size: 13px;
             cursor: pointer;
             border-radius: var(--radius-sm);
@@ -338,7 +339,7 @@
             display: none;
         }
 
-        /* ===== Search Box ===== */
+        /* ===== Search ===== */
         .search-box {
             margin-bottom: 16px;
             flex-shrink: 0;
@@ -346,10 +347,11 @@
 
         .search-box input {
             width: 100%;
-            padding: 9px 14px;
-            border: 1px solid var(--border-light);
-            border-radius: var(--radius-sm);
-            background: var(--bg-input);
+            padding: 10px 16px;
+            border: 1px solid rgba(210, 200, 188, 0.25);
+            border-radius: 30px;
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(4px);
             font-size: 13px;
             color: var(--text-primary);
             outline: none;
@@ -359,7 +361,7 @@
 
         .search-box input:focus {
             border-color: var(--accent-blue);
-            box-shadow: 0 0 0 3px rgba(91, 154, 168, 0.12);
+            box-shadow: 0 0 0 4px rgba(77, 143, 158, 0.12);
             background: #ffffff;
         }
 
@@ -383,21 +385,22 @@
         }
 
         .classmate-item {
-            padding: 14px 16px;
-            border: 1px solid var(--border-light);
+            padding: 14px 18px;
+            border: 1px solid rgba(210, 200, 188, 0.15);
             border-radius: var(--radius-md);
             margin-bottom: 10px;
-            background: var(--bg-card);
+            background: rgba(255, 255, 255, 0.50);
+            backdrop-filter: blur(4px);
             cursor: pointer;
             transition: all var(--transition);
             position: relative;
         }
 
         .classmate-item:hover {
-            background: var(--bg-hover);
-            border-color: var(--border-medium);
-            transform: translateX(3px);
-            box-shadow: var(--shadow-sm);
+            background: rgba(255, 255, 255, 0.85);
+            border-color: rgba(210, 200, 188, 0.4);
+            transform: translateX(4px) translateY(-2px);
+            box-shadow: var(--shadow-md);
         }
 
         .classmate-item:active {
@@ -448,11 +451,11 @@
             background: none;
             border: none;
             cursor: pointer;
-            font-size: 17px;
+            font-size: 18px;
             color: var(--text-muted);
             padding: 0;
             line-height: 1;
-            transition: all var(--transition);
+            transition: all 0.2s ease;
             font-family: inherit;
             display: inline-flex;
             align-items: center;
@@ -460,20 +463,23 @@
         }
 
         .like-btn:hover {
-            transform: scale(1.2);
+            transform: scale(1.25);
         }
 
         .like-btn.liked {
             color: var(--accent-red);
-            animation: likePop 0.3s ease;
+            animation: likePop 0.35s ease;
         }
 
         @keyframes likePop {
             0% {
                 transform: scale(1);
             }
-            50% {
-                transform: scale(1.4);
+            40% {
+                transform: scale(1.5);
+            }
+            70% {
+                transform: scale(0.9);
             }
             100% {
                 transform: scale(1);
@@ -517,10 +523,11 @@
         .form-group textarea,
         .form-group select {
             width: 100%;
-            padding: 8px 12px;
-            border: 1px solid var(--border-light);
+            padding: 9px 14px;
+            border: 1px solid rgba(210, 200, 188, 0.25);
             border-radius: var(--radius-sm);
-            background: var(--bg-input);
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(4px);
             font-size: 13px;
             color: var(--text-primary);
             outline: none;
@@ -532,7 +539,7 @@
         .form-group textarea:focus,
         .form-group select:focus {
             border-color: var(--accent-blue);
-            box-shadow: 0 0 0 3px rgba(91, 154, 168, 0.10);
+            box-shadow: 0 0 0 4px rgba(77, 143, 158, 0.10);
             background: #ffffff;
         }
 
@@ -549,8 +556,8 @@
 
         .save-btn {
             width: 100%;
-            padding: 10px;
-            background: var(--text-primary);
+            padding: 11px;
+            background: linear-gradient(135deg, var(--text-primary), #3d322b);
             color: #fff;
             border: none;
             border-radius: var(--radius-sm);
@@ -561,12 +568,12 @@
             font-family: var(--font-sans);
             margin-top: 4px;
             transition: all var(--transition);
+            box-shadow: 0 2px 8px rgba(44, 37, 32, 0.15);
         }
 
         .save-btn:hover:not(:disabled) {
-            background: #1a1612;
-            transform: translateY(-1px);
-            box-shadow: var(--shadow-sm);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(44, 37, 32, 0.20);
         }
 
         .save-btn:disabled {
@@ -577,10 +584,10 @@
 
         .cancel-btn {
             width: 100%;
-            padding: 10px;
-            background: transparent;
+            padding: 11px;
+            background: rgba(255, 255, 255, 0.3);
             color: var(--text-secondary);
-            border: 1px solid var(--border-medium);
+            border: 1px solid rgba(210, 200, 188, 0.3);
             border-radius: var(--radius-sm);
             cursor: pointer;
             font-size: 13px;
@@ -589,14 +596,15 @@
             font-family: var(--font-sans);
             margin-top: 6px;
             transition: all var(--transition);
+            backdrop-filter: blur(4px);
         }
 
         .cancel-btn:hover {
-            background: var(--bg-hover);
+            background: rgba(255, 255, 255, 0.6);
             border-color: var(--text-muted);
         }
 
-        /* ===== Admin Panel ===== */
+        /* ===== Admin ===== */
         #adminPanel {
             flex: 1;
             display: flex;
@@ -607,9 +615,9 @@
 
         .add-user-btn {
             width: 100%;
-            padding: 10px;
-            border: 1.5px dashed var(--border-medium);
-            background: transparent;
+            padding: 11px;
+            border: 1.5px dashed rgba(210, 200, 188, 0.4);
+            background: rgba(255, 255, 255, 0.2);
             color: var(--text-secondary);
             border-radius: var(--radius-sm);
             cursor: pointer;
@@ -620,10 +628,11 @@
             transition: all var(--transition);
             letter-spacing: 0.5px;
             flex-shrink: 0;
+            backdrop-filter: blur(4px);
         }
 
         .add-user-btn:hover {
-            background: var(--bg-hover);
+            background: rgba(255, 255, 255, 0.5);
             border-style: solid;
             border-color: var(--accent-blue);
             color: var(--text-primary);
@@ -635,17 +644,19 @@
         }
 
         .user-item {
-            padding: 12px 14px;
-            border: 1px solid var(--border-light);
+            padding: 12px 16px;
+            border: 1px solid rgba(210, 200, 188, 0.15);
             border-radius: var(--radius-md);
             margin-bottom: 10px;
-            background: var(--bg-card);
+            background: rgba(255, 255, 255, 0.40);
+            backdrop-filter: blur(4px);
             transition: all var(--transition);
         }
 
         .user-item:hover {
-            border-color: var(--border-medium);
+            border-color: rgba(210, 200, 188, 0.3);
             box-shadow: var(--shadow-sm);
+            background: rgba(255, 255, 255, 0.7);
         }
 
         .user-item .name-row {
@@ -663,9 +674,9 @@
 
         .user-item .role {
             font-size: 11px;
-            padding: 2px 10px;
-            border-radius: 12px;
-            background: var(--bg-hover);
+            padding: 2px 12px;
+            border-radius: 20px;
+            background: rgba(210, 200, 188, 0.2);
             color: var(--text-secondary);
             font-weight: 450;
         }
@@ -685,25 +696,26 @@
         .user-item .ops button {
             flex: 1;
             min-width: 44px;
-            padding: 4px 0;
+            padding: 5px 0;
             font-size: 12px;
-            border: 1px solid var(--border-light);
-            background: transparent;
+            border: 1px solid rgba(210, 200, 188, 0.2);
+            background: rgba(255, 255, 255, 0.2);
             border-radius: var(--radius-sm);
             cursor: pointer;
             color: var(--text-secondary);
             font-family: var(--font-sans);
             transition: all var(--transition);
             font-weight: 450;
+            backdrop-filter: blur(4px);
         }
 
         .user-item .ops button:hover {
-            background: var(--bg-hover);
+            background: rgba(255, 255, 255, 0.6);
             border-color: var(--border-medium);
         }
 
         .user-item .ops button:last-child:hover {
-            background: var(--accent-red-light);
+            background: rgba(196, 90, 74, 0.10);
             border-color: var(--accent-red);
             color: var(--accent-red);
         }
@@ -715,12 +727,12 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(45, 40, 34, 0.40);
-            backdrop-filter: blur(6px);
-            -webkit-backdrop-filter: blur(6px);
+            background: rgba(44, 37, 32, 0.35);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             display: none;
             z-index: 9999;
-            animation: fadeIn 0.25s ease;
+            animation: fadeIn 0.3s ease;
         }
 
         @keyframes fadeIn {
@@ -732,10 +744,13 @@
             }
         }
 
-        @keyframes slideUp {
+        @keyframes slideUpElastic {
             0% {
                 opacity: 0;
-                transform: translate(-50%, -40%) scale(0.96);
+                transform: translate(-50%, -45%) scale(0.94);
+            }
+            60% {
+                transform: translate(-50%, -52%) scale(1.01);
             }
             100% {
                 opacity: 1;
@@ -747,21 +762,23 @@
             position: absolute;
             top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%) scale(1);
-            background: var(--bg-card);
-            padding: 28px 32px;
+            transform: translate(-50%, -50%);
+            background: rgba(255, 253, 250, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            padding: 30px 34px;
             border-radius: var(--radius-lg);
             width: 440px;
             max-height: 85vh;
             overflow-y: auto;
             box-shadow: var(--shadow-lg);
             z-index: 10000;
-            animation: slideUp 0.3s ease;
-            border: 1px solid rgba(229, 221, 212, 0.3);
+            animation: slideUpElastic 0.4s ease;
+            border: 1px solid rgba(255, 255, 255, 0.3);
         }
 
         .modal-title {
-            font-size: 18px;
+            font-size: 19px;
             font-weight: 600;
             margin-bottom: 20px;
             color: var(--text-primary);
@@ -783,11 +800,11 @@
         .form-tip {
             font-size: 11px;
             color: var(--text-muted);
-            margin-top: 2px;
+            margin-top: 3px;
             font-weight: 400;
         }
 
-        /* ===== Student Detail Modal ===== */
+        /* ===== Detail Modal ===== */
         .detail-header {
             display: flex;
             justify-content: space-between;
@@ -809,33 +826,34 @@
         }
 
         .detail-msg {
-            background: var(--bg-input);
-            padding: 14px 16px;
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(4px);
+            padding: 16px 18px;
             border-radius: var(--radius-sm);
             margin-bottom: 16px;
             line-height: 1.7;
             font-size: 14px;
-            border: 1px solid var(--border-light);
+            border: 1px solid rgba(210, 200, 188, 0.15);
             color: var(--text-secondary);
         }
 
         .detail-msg .like-area {
-            margin-top: 10px;
-            padding-top: 10px;
-            border-top: 1px solid var(--border-light);
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid rgba(210, 200, 188, 0.2);
         }
 
         .comment-list {
             margin-top: 12px;
-            max-height: 280px;
+            max-height: 260px;
             overflow-y: auto;
-            border-top: 1px solid var(--border-light);
+            border-top: 1px solid rgba(210, 200, 188, 0.15);
             padding-top: 12px;
         }
 
         .comment-item {
             padding: 10px 0;
-            border-bottom: 1px solid var(--border-light);
+            border-bottom: 1px solid rgba(210, 200, 188, 0.1);
         }
 
         .comment-item:last-child {
@@ -873,7 +891,7 @@
             background: none;
             border: none;
             font-family: var(--font-sans);
-            padding: 0 4px;
+            padding: 0 6px;
             transition: color var(--transition);
             font-weight: 450;
         }
@@ -890,54 +908,55 @@
             border: none;
             font-family: var(--font-sans);
             margin-left: 4px;
-            padding: 0 4px;
+            padding: 0 6px;
             transition: color var(--transition);
             font-weight: 450;
         }
 
         .comment-reply-btn:hover {
-            color: #3f7a88;
+            color: #3a7a88;
         }
 
         .reply-item {
             margin-left: 18px;
-            border-left: 2px solid var(--border-light);
-            padding-left: 12px;
+            border-left: 2px solid rgba(210, 200, 188, 0.2);
+            padding-left: 14px;
         }
 
         .comment-input-area {
-            margin-top: 12px;
+            margin-top: 14px;
             display: flex;
-            gap: 8px;
+            gap: 10px;
             align-items: flex-end;
         }
 
         .comment-input-area textarea {
             flex: 1;
-            padding: 8px 12px;
-            border: 1px solid var(--border-light);
+            padding: 8px 14px;
+            border: 1px solid rgba(210, 200, 188, 0.2);
             border-radius: var(--radius-sm);
-            background: var(--bg-input);
+            background: rgba(255, 255, 255, 0.4);
+            backdrop-filter: blur(4px);
             font-size: 13px;
             color: var(--text-primary);
             outline: none;
             font-family: var(--font-sans);
             resize: none;
-            height: 38px;
+            height: 40px;
             transition: all var(--transition);
             line-height: 1.5;
         }
 
         .comment-input-area textarea:focus {
             border-color: var(--accent-blue);
-            box-shadow: 0 0 0 3px rgba(91, 154, 168, 0.10);
+            box-shadow: 0 0 0 4px rgba(77, 143, 158, 0.08);
             background: #ffffff;
         }
 
         .comment-input-area button {
-            padding: 0 18px;
-            height: 38px;
-            background: var(--text-primary);
+            padding: 0 22px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--text-primary), #3d322b);
             color: #fff;
             border: none;
             border-radius: var(--radius-sm);
@@ -947,16 +966,18 @@
             font-weight: 500;
             transition: all var(--transition);
             flex-shrink: 0;
+            box-shadow: 0 2px 8px rgba(44, 37, 32, 0.12);
         }
 
         .comment-input-area button:hover:not(:disabled) {
-            background: #1a1612;
-            transform: translateY(-1px);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(44, 37, 32, 0.18);
         }
 
         .comment-input-area button:disabled {
             opacity: 0.5;
             cursor: not-allowed;
+            transform: none !important;
         }
 
         .detail-close-btn {
@@ -965,14 +986,14 @@
             font-size: 20px;
             cursor: pointer;
             color: var(--text-muted);
-            padding: 4px 8px;
+            padding: 4px 10px;
             border-radius: var(--radius-sm);
             transition: all var(--transition);
             line-height: 1;
         }
 
         .detail-close-btn:hover {
-            background: var(--bg-hover);
+            background: rgba(210, 200, 188, 0.15);
             color: var(--text-primary);
         }
 
@@ -984,7 +1005,7 @@
             font-size: 14px;
         }
 
-        /* ===== Responsive ===== */
+        /* ===== 响应式 ===== */
         @media screen and (max-width: 900px) {
             .sidebar {
                 width: 320px;
@@ -992,14 +1013,13 @@
             }
             .header {
                 padding: 0 20px;
-                height: 72px;
+                height: 68px;
             }
             .header-left h2 {
                 font-size: 18px;
-                letter-spacing: 2px;
             }
             .main {
-                height: calc(100vh - 72px);
+                height: calc(100vh - 68px);
             }
             .map-stats .cn {
                 font-size: 22px;
@@ -1007,22 +1027,16 @@
             .map-stats .count {
                 font-size: 16px;
             }
-            .map-stats {
-                bottom: 24px;
-                left: 24px;
-            }
         }
 
         @media screen and (max-width: 768px) {
             .header {
-                height: 64px;
+                height: 60px;
                 padding: 0 14px;
-                flex-wrap: wrap;
-                gap: 4px;
             }
             .header-left h2 {
                 font-size: 15px;
-                letter-spacing: 1.5px;
+                letter-spacing: 1px;
             }
             .header-left p {
                 font-size: 10px;
@@ -1034,40 +1048,38 @@
             }
             .user-info {
                 font-size: 11px;
-                padding: 2px 10px;
+                padding: 3px 12px;
             }
             .logout-btn {
-                padding: 4px 12px;
+                padding: 4px 14px;
                 font-size: 11px;
             }
 
             .main {
                 flex-direction: column;
-                height: calc(100vh - 64px);
+                height: calc(100vh - 60px);
             }
 
             .map-container {
-                height: 45vh;
+                height: 42vh;
                 flex: none;
             }
 
             .sidebar {
                 width: 100%;
-                height: 55vh;
+                height: 58vh;
                 border-left: none;
-                border-top: 1px solid rgba(229, 221, 212, 0.5);
+                border-top: 1px solid rgba(210, 200, 188, 0.2);
                 padding: 14px 14px;
-                backdrop-filter: blur(8px);
-                -webkit-backdrop-filter: blur(8px);
+                backdrop-filter: blur(16px);
             }
 
             .map-stats {
-                bottom: 16px;
-                left: 16px;
+                bottom: 14px;
+                left: 14px;
             }
             .map-stats .cn {
                 font-size: 18px;
-                letter-spacing: 2px;
             }
             .map-stats .count {
                 font-size: 14px;
@@ -1082,34 +1094,24 @@
                 max-height: 90vh;
                 padding: 20px 18px;
             }
-
             .detail-name {
                 font-size: 17px;
             }
-
             .tab-item {
                 font-size: 12px;
-                padding: 6px 0;
+                padding: 7px 0;
             }
-
             .classmate-item {
-                padding: 10px 12px;
+                padding: 10px 14px;
                 margin-bottom: 8px;
             }
             .classmate-name {
                 font-size: 14px;
             }
-            .classmate-loc {
-                font-size: 11px;
-            }
-            .classmate-msg {
-                font-size: 11.5px;
-            }
-
             .map-back-btn {
                 top: 12px;
                 left: 14px;
-                padding: 5px 14px;
+                padding: 5px 16px;
                 font-size: 11px;
             }
         }
@@ -1117,25 +1119,24 @@
         @media screen and (max-width: 480px) {
             .header-left h2 {
                 font-size: 13px;
-                letter-spacing: 1px;
             }
             .header-left p {
                 font-size: 9px;
             }
-            .header-right .user-info {
+            .user-info {
                 font-size: 10px;
-                padding: 1px 8px;
+                padding: 2px 10px;
             }
             .logout-btn {
                 font-size: 10px;
-                padding: 3px 10px;
+                padding: 3px 12px;
             }
             .sidebar {
                 padding: 10px 10px;
             }
             .tab-item {
                 font-size: 11px;
-                padding: 5px 0;
+                padding: 6px 0;
             }
             .modal-content {
                 padding: 16px 14px;
@@ -1150,19 +1151,18 @@
                 font-size: 12px;
             }
             .map-stats {
-                bottom: 12px;
-                left: 12px;
+                bottom: 10px;
+                left: 10px;
             }
         }
 
         @media screen and (max-width: 768px) and (orientation: landscape) {
             .header {
-                height: 48px;
-                padding: 0 12px;
+                height: 46px;
+                padding: 0 10px;
             }
             .header-left h2 {
                 font-size: 13px;
-                letter-spacing: 1px;
             }
             .header-left p {
                 font-size: 9px;
@@ -1173,16 +1173,16 @@
             }
             .user-info {
                 font-size: 10px;
-                padding: 1px 8px;
+                padding: 2px 10px;
             }
             .logout-btn {
                 font-size: 10px;
-                padding: 2px 10px;
+                padding: 2px 12px;
             }
 
             .main {
                 flex-direction: row;
-                height: calc(100vh - 48px);
+                height: calc(100vh - 46px);
             }
 
             .map-container {
@@ -1194,18 +1194,16 @@
                 width: 42%;
                 height: 100%;
                 border-top: none;
-                border-left: 1px solid rgba(229, 221, 212, 0.5);
+                border-left: 1px solid rgba(210, 200, 188, 0.2);
                 padding: 10px 12px;
-                backdrop-filter: blur(8px);
-                -webkit-backdrop-filter: blur(8px);
             }
 
             .tab-item {
                 font-size: 10px;
-                padding: 4px 0;
+                padding: 5px 0;
             }
             .classmate-item {
-                padding: 8px 10px;
+                padding: 8px 12px;
                 margin-bottom: 6px;
             }
             .classmate-name {
@@ -1223,10 +1221,10 @@
                 margin-top: 6px;
             }
             .like-btn {
-                font-size: 14px;
+                font-size: 15px;
             }
             .map-stats {
-                bottom: 10px;
+                bottom: 8px;
                 left: 12px;
             }
             .map-stats .cn {
@@ -1243,7 +1241,7 @@
             .map-back-btn {
                 top: 8px;
                 left: 10px;
-                padding: 4px 12px;
+                padding: 4px 14px;
                 font-size: 10px;
             }
             .modal-content {
@@ -1261,7 +1259,7 @@
             .form-group textarea,
             .form-group select {
                 font-size: 12px;
-                padding: 6px 10px;
+                padding: 6px 12px;
             }
             .save-btn,
             .cancel-btn {
@@ -1286,7 +1284,7 @@
     <div class="main">
         <div class="map-container">
             <button class="map-back-btn" id="backBtn" onclick="goBack()">← 返回</button>
-            <div class="map-loading" id="mapLoading">地图加载中...</div>
+            <div class="map-loading" id="mapLoading">地图加载中…</div>
             <div id="map"></div>
             <div class="map-stats">
                 <div class="en">PEOPLE AROUND THE WORLD</div>
@@ -1989,10 +1987,12 @@
                 backgroundColor: 'transparent',
                 tooltip: {
                     show: true,
-                    backgroundColor: 'rgba(255,253,248,0.92)',
-                    borderColor: 'rgba(229,221,212,0.5)',
+                    backgroundColor: 'rgba(255,253,250,0.92)',
+                    borderColor: 'rgba(210,200,188,0.2)',
                     borderWidth: 1,
-                    textStyle: { color: '#2d2822', fontSize: 12 },
+                    borderRadius: 10,
+                    padding: [12, 16],
+                    textStyle: { color: '#2c2520', fontSize: 12 },
                     formatter: function(params) {
                         if (params.componentType === 'geo') return params.name;
                         let base = getPointTooltip(params.name, 'world');
@@ -2007,14 +2007,14 @@
                     itemStyle: {
                         areaColor: '#e5ddd4',
                         borderColor: '#d5cbbc',
-                        borderWidth: 0.6,
-                        shadowBlur: 4,
-                        shadowColor: 'rgba(45,40,34,0.04)'
+                        borderWidth: 0.5,
+                        shadowBlur: 6,
+                        shadowColor: 'rgba(44,37,32,0.04)'
                     },
                     label: { show: false, color: '#6b5f52', fontSize: 10 },
                     emphasis: {
                         itemStyle: { areaColor: '#d5cbbc' },
-                        label: { show: true, color: '#2d2822', fontSize: 11, fontWeight: 500 }
+                        label: { show: true, color: '#2c2520', fontSize: 11, fontWeight: 500 }
                     }
                 },
                 series: [{
@@ -2022,16 +2022,18 @@
                     coordinateSystem: 'geo',
                     symbolSize: 10,
                     itemStyle: {
-                        color: '#5b9aa8',
-                        shadowBlur: 8,
-                        shadowColor: 'rgba(91,154,168,0.25)',
-                        opacity: 0.85
+                        color: '#4d8f9e',
+                        shadowBlur: 12,
+                        shadowColor: 'rgba(77,143,158,0.30)',
+                        opacity: 0.9,
+                        borderColor: '#fff',
+                        borderWidth: 1
                     },
                     emphasis: {
                         itemStyle: {
                             color: '#c45a4a',
-                            shadowBlur: 12,
-                            shadowColor: 'rgba(196,90,74,0.4)',
+                            shadowBlur: 16,
+                            shadowColor: 'rgba(196,90,74,0.45)',
                             opacity: 1
                         }
                     },
@@ -2077,10 +2079,12 @@
                 backgroundColor: 'transparent',
                 tooltip: {
                     show: true,
-                    backgroundColor: 'rgba(255,253,248,0.92)',
-                    borderColor: 'rgba(229,221,212,0.5)',
+                    backgroundColor: 'rgba(255,253,250,0.92)',
+                    borderColor: 'rgba(210,200,188,0.2)',
                     borderWidth: 1,
-                    textStyle: { color: '#2d2822', fontSize: 12 },
+                    borderRadius: 10,
+                    padding: [12, 16],
+                    textStyle: { color: '#2c2520', fontSize: 12 },
                     formatter: function(params) {
                         if (params.componentType === 'geo') return params.name;
                         let base = getPointTooltip(params.name, 'country');
@@ -2095,13 +2099,13 @@
                     itemStyle: {
                         areaColor: '#e5ddd4',
                         borderColor: '#d5cbbc',
-                        borderWidth: 0.6,
-                        shadowBlur: 4,
-                        shadowColor: 'rgba(45,40,34,0.04)'
+                        borderWidth: 0.5,
+                        shadowBlur: 6,
+                        shadowColor: 'rgba(44,37,32,0.04)'
                     },
                     emphasis: {
                         itemStyle: { areaColor: '#d5cbbc' },
-                        label: { show: true, color: '#2d2822', fontSize: 11, fontWeight: 500 }
+                        label: { show: true, color: '#2c2520', fontSize: 11, fontWeight: 500 }
                     }
                 },
                 series: [{
@@ -2109,16 +2113,18 @@
                     coordinateSystem: 'geo',
                     symbolSize: 14,
                     itemStyle: {
-                        color: '#5b9aa8',
-                        shadowBlur: 8,
-                        shadowColor: 'rgba(91,154,168,0.25)',
-                        opacity: 0.85
+                        color: '#4d8f9e',
+                        shadowBlur: 12,
+                        shadowColor: 'rgba(77,143,158,0.30)',
+                        opacity: 0.9,
+                        borderColor: '#fff',
+                        borderWidth: 1
                     },
                     emphasis: {
                         itemStyle: {
                             color: '#c45a4a',
-                            shadowBlur: 12,
-                            shadowColor: 'rgba(196,90,74,0.4)',
+                            shadowBlur: 16,
+                            shadowColor: 'rgba(196,90,74,0.45)',
                             opacity: 1
                         }
                     },
@@ -2164,10 +2170,12 @@
                 backgroundColor: 'transparent',
                 tooltip: {
                     show: true,
-                    backgroundColor: 'rgba(255,253,248,0.92)',
-                    borderColor: 'rgba(229,221,212,0.5)',
+                    backgroundColor: 'rgba(255,253,250,0.92)',
+                    borderColor: 'rgba(210,200,188,0.2)',
                     borderWidth: 1,
-                    textStyle: { color: '#2d2822', fontSize: 12 },
+                    borderRadius: 10,
+                    padding: [12, 16],
+                    textStyle: { color: '#2c2520', fontSize: 12 },
                     formatter: function(params) {
                         if (params.componentType === 'geo') return params.name;
                         let base = getPointTooltip(params.name, 'province');
@@ -2181,13 +2189,13 @@
                     itemStyle: {
                         areaColor: '#e5ddd4',
                         borderColor: '#d5cbbc',
-                        borderWidth: 0.6,
-                        shadowBlur: 4,
-                        shadowColor: 'rgba(45,40,34,0.04)'
+                        borderWidth: 0.5,
+                        shadowBlur: 6,
+                        shadowColor: 'rgba(44,37,32,0.04)'
                     },
                     emphasis: {
                         itemStyle: { areaColor: '#d5cbbc' },
-                        label: { show: true, color: '#2d2822', fontSize: 11, fontWeight: 500 }
+                        label: { show: true, color: '#2c2520', fontSize: 11, fontWeight: 500 }
                     }
                 },
                 series: [{
@@ -2195,16 +2203,18 @@
                     coordinateSystem: 'geo',
                     symbolSize: getSymbolSize,
                     itemStyle: {
-                        color: '#5b9aa8',
-                        shadowBlur: 8,
-                        shadowColor: 'rgba(91,154,168,0.25)',
-                        opacity: 0.85
+                        color: '#4d8f9e',
+                        shadowBlur: 12,
+                        shadowColor: 'rgba(77,143,158,0.30)',
+                        opacity: 0.9,
+                        borderColor: '#fff',
+                        borderWidth: 1
                     },
                     emphasis: {
                         itemStyle: {
                             color: '#c45a4a',
-                            shadowBlur: 12,
-                            shadowColor: 'rgba(196,90,74,0.4)',
+                            shadowBlur: 16,
+                            shadowColor: 'rgba(196,90,74,0.45)',
                             opacity: 1
                         }
                     },
@@ -2248,10 +2258,12 @@
                 backgroundColor: 'transparent',
                 tooltip: {
                     show: true,
-                    backgroundColor: 'rgba(255,253,248,0.92)',
-                    borderColor: 'rgba(229,221,212,0.5)',
+                    backgroundColor: 'rgba(255,253,250,0.92)',
+                    borderColor: 'rgba(210,200,188,0.2)',
                     borderWidth: 1,
-                    textStyle: { color: '#2d2822', fontSize: 12 },
+                    borderRadius: 10,
+                    padding: [12, 16],
+                    textStyle: { color: '#2c2520', fontSize: 12 },
                     formatter: function(params) {
                         if (params.componentType === 'geo') return params.name;
                         let base = getPointTooltip(params.name, 'city');
@@ -2265,13 +2277,13 @@
                     itemStyle: {
                         areaColor: '#e5ddd4',
                         borderColor: '#d5cbbc',
-                        borderWidth: 0.6,
-                        shadowBlur: 4,
-                        shadowColor: 'rgba(45,40,34,0.04)'
+                        borderWidth: 0.5,
+                        shadowBlur: 6,
+                        shadowColor: 'rgba(44,37,32,0.04)'
                     },
                     emphasis: {
                         itemStyle: { areaColor: '#d5cbbc' },
-                        label: { show: true, color: '#2d2822', fontSize: 11, fontWeight: 500 }
+                        label: { show: true, color: '#2c2520', fontSize: 11, fontWeight: 500 }
                     }
                 },
                 series: [{
@@ -2279,16 +2291,18 @@
                     coordinateSystem: 'geo',
                     symbolSize: getSymbolSize,
                     itemStyle: {
-                        color: '#5b9aa8',
-                        shadowBlur: 8,
-                        shadowColor: 'rgba(91,154,168,0.25)',
-                        opacity: 0.85
+                        color: '#4d8f9e',
+                        shadowBlur: 12,
+                        shadowColor: 'rgba(77,143,158,0.30)',
+                        opacity: 0.9,
+                        borderColor: '#fff',
+                        borderWidth: 1
                     },
                     emphasis: {
                         itemStyle: {
                             color: '#c45a4a',
-                            shadowBlur: 12,
-                            shadowColor: 'rgba(196,90,74,0.4)',
+                            shadowBlur: 16,
+                            shadowColor: 'rgba(196,90,74,0.45)',
                             opacity: 1
                         }
                     },
