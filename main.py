@@ -1,12 +1,12 @@
 import os
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from fastapi import FastAPI, Request, HTTPException, Depends, Body, Query
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import Optional
 from pathlib import Path
 
 # ========== 数据库相关导入 ==========
@@ -39,6 +39,12 @@ engine = create_engine(
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
+
+# ========== 北京时间函数 ==========
+def beijing_now():
+    """返回北京时间字符串，格式 YYYY-MM-DD HH:MM"""
+    beijing_tz = timezone(timedelta(hours=8))
+    return datetime.now(beijing_tz).strftime("%Y-%m-%d %H:%M")
 
 # ========== 数据库表模型 ==========
 class UserDB(Base):
@@ -380,7 +386,7 @@ async def get_map_points(username: Optional[str] = None, db: Session = Depends(g
         })
     return {"code": 200, "data": points}
 
-# ========== 评论接口（支持回复） ==========
+# ========== 评论接口（支持回复，使用北京时间） ==========
 @app.post("/api/comment/{to_username}")
 async def add_comment(
     to_username: str,
@@ -404,7 +410,8 @@ async def add_comment(
         if not parent_comment:
             return {"code": 404, "msg": "父评论不存在"}
 
-    now = datetime.now().strftime("%Y-%m-%d %H:%M")
+    # 使用北京时间
+    now = beijing_now()
     new_comment = CommentDB(
         to_username=to_username,
         from_username=from_username,
