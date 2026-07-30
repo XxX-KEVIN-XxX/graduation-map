@@ -1,22 +1,24 @@
 import os
-from fastapi import FastAPI, Request, HTTPException, Depends
+from datetime import datetime
+from fastapi import FastAPI, Request, HTTPException, Depends, Body
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 from pathlib import Path
+
 # ========== 数据库相关导入 ==========
-from sqlalchemy import create_engine, Column, Integer, String, Text, UniqueConstraint
+from sqlalchemy import create_engine, Column, Integer, String, Text, UniqueConstraint, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import sessionmaker, Session, relationship
+
 # ========== 初始化应用 ==========
 app = FastAPI(title="毕业地图")
-# 以当前 py 文件所在目录为基准，构造绝对路径
 BASE_DIR = Path(__file__).resolve().parent
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
-# 跨域配置
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -24,21 +26,20 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-# 挂载静态文件目录（使用绝对路径，兼容所有运行环境）
 app.mount("/static", StaticFiles(directory=str(BASE_DIR / "static")), name="static")
-# ========== 数据库配置（自动适配线上/本地）==========
-# 优先读取Render注入的环境变量，本地默认用SQLite
+
+# ========== 数据库配置 ==========
 DATABASE_URL = os.environ.get("DATABASE_URL", "sqlite:///./data/users.db")
-# 兼容Render的postgres协议前缀，同时指定使用psycopg2驱动
 if DATABASE_URL.startswith("postgres://"):
     DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql+psycopg2://", 1)
-# 创建数据库引擎
+
 engine = create_engine(
     DATABASE_URL,
     connect_args={"check_same_thread": False} if DATABASE_URL.startswith("sqlite") else {}
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
+
 # ========== 数据库表模型 ==========
 class UserDB(Base):
     __tablename__ = "users"
@@ -53,19 +54,29 @@ class UserDB(Base):
     message = Column(Text, default="")
     role = Column(String(20), default="user")
 
-# 留言点赞关系表：一个用户对另一个用户的毕业留言只能点一次赞
 class LikeDB(Base):
     __tablename__ = "likes"
     id = Column(Integer, primary_key=True, index=True)
-    from_username = Column(String(50), nullable=False, index=True)  # 点赞者用户名
-    to_username = Column(String(50), nullable=False, index=True)    # 被点赞留言的作者用户名
-    # 联合唯一约束：防止重复点赞
+    from_username = Column(String(50), nullable=False, index=True)
+    to_username = Column(String(50), nullable=False, index=True)
     __table_args__ = (
         UniqueConstraint('from_username', 'to_username', name='uq_from_to_like'),
     )
 
-# 启动时自动建表（新增表会自动创建，不影响已有表）
+class CommentDB(Base):
+    __tablename__ = "comments"
+    id = Column(Integer, primary_key=True, index=True)
+    to_username = Column(String(50), nullable=False, index=True)   # 被评论的留言作者
+    from_username = Column(String(50), nullable=False)             # 评论者
+    content = Column(Text, nullable=False)
+    created_at = Column(String(30), nullable=False)
+    parent_id = Column(Integer, ForeignKey("comments.id"), nullable=True)  # 父评论ID，用于回复
+    # 自引用关系
+    parent = relationship("CommentDB", remote_side=[id], backref="replies")
+
+# 启动时自动建表
 Base.metadata.create_all(bind=engine)
+
 # 数据库会话依赖
 def get_db():
     db = SessionLocal()
@@ -73,19 +84,18 @@ def get_db():
         yield db
     finally:
         db.close()
+
 # ========== 初始化默认管理员 ==========
 def init_default_admin():
     db = SessionLocal()
     admin_exist = db.query(UserDB).filter(UserDB.role == "admin").first()
     if not admin_exist:
-        # 默认主管理员
         default_admin = UserDB(
             username="xuekecheng",
             password="123456",
             name="薛可成",
             role="admin"
         )
-        # 新增的第二个默认管理员
         second_admin = UserDB(
             username="liuchengyin",
             password="123456",
@@ -97,41 +107,52 @@ def init_default_admin():
         print("✅ 已创建默认管理员账号")
     db.close()
 init_default_admin()
+
 # ========== 请求数据模型 ==========
 class LoginReq(BaseModel):
     username: str
     password: str
+
 class UserEditReq(BaseModel):
-    # 管理员编辑时禁止修改密码，普通用户修改密码走专用接口
     name: Optional[str] = None
     country: Optional[str] = None
     province: Optional[str] = None
     city: Optional[str] = None
     district: Optional[str] = None
     message: Optional[str] = None
+
 class UserCreateReq(UserEditReq):
     username: str
     password: str
     role: str = "user"
-# 修改密码专用请求模型
+
 class ChangePasswordReq(BaseModel):
     username: str
     old_password: str
     new_password: str
     confirm_password: str
+
+class CommentCreateReq(BaseModel):
+    content: str
+    parent_id: Optional[int] = None  # 回复某条评论时传入父评论ID
+
 # ========== 页面路由 ==========
 @app.get("/", response_class=HTMLResponse)
 async def login_page(request: Request):
     return templates.TemplateResponse(request=request, name="login.html")
+
 @app.get("/index", response_class=HTMLResponse)
 async def map_page(request: Request):
     return templates.TemplateResponse(request=request, name="index.html")
+
 @app.get("/change-password", response_class=HTMLResponse)
 async def change_password_page(request: Request):
     return templates.TemplateResponse(request=request, name="change_password.html")
+
 @app.get("/admin-users", response_class=HTMLResponse)
 async def admin_users_page(request: Request):
     return templates.TemplateResponse(request=request, name="admin_users.html")
+
 # ========== 登录接口 ==========
 @app.post("/api/auth/login")
 async def login(req: LoginReq, db: Session = Depends(get_db)):
@@ -149,7 +170,8 @@ async def login(req: LoginReq, db: Session = Depends(get_db)):
         "role": user.role
     }
     return {"code": 200, "msg": "登录成功", "data": user_info}
-# ========== 普通用户：修改自己的信息（不含密码） ==========
+
+# ========== 普通用户修改信息 ==========
 @app.put("/api/user/self")
 async def update_self(username: str, req: UserEditReq, db: Session = Depends(get_db)):
     user = db.query(UserDB).filter(UserDB.username == username).first()
@@ -171,37 +193,32 @@ async def update_self(username: str, req: UserEditReq, db: Session = Depends(get
         "role": user.role
     }
     return {"code": 200, "msg": "保存成功", "data": new_info}
-# ========== 普通用户修改自己的密码 ==========
+
+# ========== 修改密码 ==========
 @app.api_route("/api/user/change-password", methods=["POST", "PUT"])
-@app.api_route("/api/user/change-password/", methods=["POST", "PUT"])
 async def change_password(req: ChangePasswordReq, db: Session = Depends(get_db)):
-    # 基础参数校验
     if not req.old_password or not req.new_password or not req.confirm_password:
         return {"code": 400, "msg": "所有密码项不能为空"}
     if req.new_password != req.confirm_password:
         return {"code": 400, "msg": "两次输入的新密码不一致"}
     if len(req.new_password) < 6:
         return {"code": 400, "msg": "新密码长度不能少于6位"}
-    # 查询当前用户
     user = db.query(UserDB).filter(UserDB.username == req.username).first()
     if not user:
         return {"code": 404, "msg": "用户不存在"}
-    # 校验原密码
     if user.password != req.old_password:
         return {"code": 400, "msg": "原密码输入错误"}
-    # 更新密码
     user.password = req.new_password
     db.commit()
     return {"code": 200, "msg": "密码修改成功，请重新登录"}
-# ========== 管理员：用户管理接口 ==========
-# 管理员查看用户列表（包含密码，仅查看）
+
+# ========== 管理员接口 ==========
 @app.get("/api/admin/users")
 async def get_all_users(admin_name: str, db: Session = Depends(get_db)):
     admin = db.query(UserDB).filter(UserDB.username == admin_name).first()
     if not admin or admin.role != "admin":
         raise HTTPException(status_code=403, detail="无管理员权限")
     users = db.query(UserDB).all()
-    # 预计算所有用户获赞数，避免循环查库
     like_counts = {}
     all_likes = db.query(LikeDB).all()
     for record in all_likes:
@@ -223,13 +240,12 @@ async def get_all_users(admin_name: str, db: Session = Depends(get_db)):
             "like_count": like_counts.get(user.username, 0)
         })
     return {"code": 200, "data": user_list}
-# 管理员添加用户（可设置初始密码，角色可设为 user / teacher）
+
 @app.post("/api/admin/users")
 async def add_user(admin_name: str, req: UserCreateReq, db: Session = Depends(get_db)):
     admin = db.query(UserDB).filter(UserDB.username == admin_name).first()
     if not admin or admin.role != "admin":
         raise HTTPException(status_code=403, detail="无管理员权限")
-    # 检查用户名是否已存在
     exist_user = db.query(UserDB).filter(UserDB.username == req.username).first()
     if exist_user:
         return {"code": 400, "msg": "用户名已存在"}
@@ -237,7 +253,7 @@ async def add_user(admin_name: str, req: UserCreateReq, db: Session = Depends(ge
     db.add(new_user)
     db.commit()
     return {"code": 200, "msg": "用户添加成功"}
-# 管理员编辑用户（禁止修改密码，仅能修改基础信息）
+
 @app.put("/api/admin/users/{target_user}")
 async def edit_user(admin_name: str, target_user: str, req: UserEditReq, db: Session = Depends(get_db)):
     admin = db.query(UserDB).filter(UserDB.username == admin_name).first()
@@ -246,13 +262,12 @@ async def edit_user(admin_name: str, target_user: str, req: UserEditReq, db: Ses
     user = db.query(UserDB).filter(UserDB.username == target_user).first()
     if not user:
         return {"code": 404, "msg": "用户不存在"}
-    # UserEditReq 已移除 password 字段，管理员无法通过此接口修改密码
     update_data = req.dict(exclude_unset=True)
     for key, value in update_data.items():
         setattr(user, key, value)
     db.commit()
     return {"code": 200, "msg": "修改成功"}
-# 管理员删除用户
+
 @app.delete("/api/admin/users/{target_user}")
 async def remove_user(admin_name: str, target_user: str, db: Session = Depends(get_db)):
     admin = db.query(UserDB).filter(UserDB.username == admin_name).first()
@@ -263,52 +278,46 @@ async def remove_user(admin_name: str, target_user: str, db: Session = Depends(g
     user = db.query(UserDB).filter(UserDB.username == target_user).first()
     if not user:
         return {"code": 404, "msg": "用户不存在"}
-    # 删除用户同时清理其发出和收到的所有点赞记录
     db.query(LikeDB).filter(
         (LikeDB.from_username == target_user) | (LikeDB.to_username == target_user)
+    ).delete(synchronize_session=False)
+    db.query(CommentDB).filter(
+        (CommentDB.from_username == target_user) | (CommentDB.to_username == target_user)
     ).delete(synchronize_session=False)
     db.delete(user)
     db.commit()
     return {"code": 200, "msg": "删除成功"}
-# ========== 留言点赞核心接口 ==========
-# 点赞/取消点赞（切换状态）
+
+# ========== 点赞接口 ==========
 @app.post("/api/like/{to_username}")
 async def toggle_like(from_username: str, to_username: str, db: Session = Depends(get_db)):
-    # 校验点赞者账号
     from_user = db.query(UserDB).filter(UserDB.username == from_username).first()
     if not from_user:
         return {"code": 404, "msg": "点赞者账号不存在"}
-    # 权限校验：教师角色禁止点赞
     if from_user.role == "teacher":
         return {"code": 403, "msg": "教师角色无点赞权限"}
-    # 校验被点赞用户
     to_user = db.query(UserDB).filter(UserDB.username == to_username).first()
     if not to_user:
         return {"code": 404, "msg": "被点赞用户不存在"}
-    # 禁止给自己点赞
     if from_username == to_username:
         return {"code": 400, "msg": "不能给自己的留言点赞"}
 
-    # 查询点赞记录，切换状态
     exist_like = db.query(LikeDB).filter(
         LikeDB.from_username == from_username,
         LikeDB.to_username == to_username
     ).first()
 
     if exist_like:
-        # 已点赞 → 取消点赞
         db.delete(exist_like)
         liked = False
         msg = "取消点赞成功"
     else:
-        # 未点赞 → 新增点赞
         new_like = LikeDB(from_username=from_username, to_username=to_username)
         db.add(new_like)
         liked = True
         msg = "点赞成功"
 
     db.commit()
-    # 返回最新获赞数
     like_count = db.query(LikeDB).filter(LikeDB.to_username == to_username).count()
     return {
         "code": 200,
@@ -319,7 +328,6 @@ async def toggle_like(from_username: str, to_username: str, db: Session = Depend
         }
     }
 
-# 查询单条留言的点赞状态（获赞数 + 当前用户是否已点赞）
 @app.get("/api/like/status/{to_username}")
 async def get_like_status(to_username: str, from_username: Optional[str] = None, db: Session = Depends(get_db)):
     like_count = db.query(LikeDB).filter(LikeDB.to_username == to_username).count()
@@ -337,24 +345,22 @@ async def get_like_status(to_username: str, from_username: Optional[str] = None,
             "liked": liked
         }
     }
-# ========== 地图点位接口（补充点赞状态） ==========
+
+# ========== 地图点位接口 ==========
 @app.get("/api/map/points")
 async def get_map_points(username: Optional[str] = None, db: Session = Depends(get_db)):
     users = db.query(UserDB).all()
-    # 判断当前用户是否为教师角色
     is_teacher = False
     if username:
         current_user = db.query(UserDB).filter(UserDB.username == username).first()
         if current_user and current_user.role == "teacher":
             is_teacher = True
 
-    # 预计算所有用户的获赞数
     like_counts = {}
     all_likes = db.query(LikeDB).all()
     for record in all_likes:
         like_counts[record.to_username] = like_counts.get(record.to_username, 0) + 1
 
-    # 预获取当前用户的所有点赞记录，批量判断状态
     user_liked_set = set()
     if username and not is_teacher:
         my_likes = db.query(LikeDB).filter(LikeDB.from_username == username).all()
@@ -369,22 +375,127 @@ async def get_map_points(username: Optional[str] = None, db: Session = Depends(g
             "province": user.province,
             "city": user.city,
             "district": user.district,
-            # 教师角色屏蔽毕业留言
             "message": user.message if not is_teacher else "",
-            # 点赞数
             "like_count": like_counts.get(user.username, 0),
-            # 当前用户是否已点赞该留言
             "is_liked": user.username in user_liked_set
         })
     return {"code": 200, "data": points}
-# ========== 退出登录接口 ==========
+
+# ========== 评论接口（支持回复） ==========
+@app.post("/api/comment/{to_username}")
+async def add_comment(
+    to_username: str,
+    from_username: str = Body(...),
+    req: CommentCreateReq = None,
+    db: Session = Depends(get_db)
+):
+    # 参数处理：支持 query 参数和 body 混合
+    # 为了兼容前端，我们约定 from_username 通过 query 传递，content 和 parent_id 通过 body JSON 传递
+    # 注意：FastAPI 的 Body 只能用于 POST 请求的 JSON 体，所以我们需要调整
+    # 简单起见，我们修改接口：from_username 作为查询参数，content 和 parent_id 作为 JSON body
+    if req is None:
+        # 尝试从请求体中解析
+        return {"code": 400, "msg": "请提供评论内容"}
+
+    from_user = db.query(UserDB).filter(UserDB.username == from_username).first()
+    if not from_user:
+        return {"code": 404, "msg": "评论者账号不存在"}
+    if from_user.role == "teacher":
+        return {"code": 403, "msg": "教师角色无评论权限"}
+
+    to_user = db.query(UserDB).filter(UserDB.username == to_username).first()
+    if not to_user:
+        return {"code": 404, "msg": "被评论用户不存在"}
+
+    # 允许评论自己的留言，所以不做 from_username == to_username 的限制
+
+    parent_id = req.parent_id
+    if parent_id is not None:
+        parent_comment = db.query(CommentDB).filter(CommentDB.id == parent_id).first()
+        if not parent_comment:
+            return {"code": 404, "msg": "父评论不存在"}
+
+    now = datetime.now().strftime("%Y-%m-%d %H:%M")
+    new_comment = CommentDB(
+        to_username=to_username,
+        from_username=from_username,
+        content=req.content,
+        created_at=now,
+        parent_id=parent_id
+    )
+    db.add(new_comment)
+    db.commit()
+    db.refresh(new_comment)
+    return {"code": 200, "msg": "评论成功", "data": {
+        "id": new_comment.id,
+        "from_username": new_comment.from_username,
+        "from_name": from_user.name,
+        "content": new_comment.content,
+        "created_at": new_comment.created_at,
+        "parent_id": new_comment.parent_id
+    }}
+
+@app.get("/api/comment/{to_username}")
+async def get_comments(to_username: str, db: Session = Depends(get_db)):
+    # 获取所有顶级评论（parent_id 为 None），并包含回复
+    top_comments = db.query(CommentDB).filter(
+        CommentDB.to_username == to_username,
+        CommentDB.parent_id == None
+    ).order_by(CommentDB.id.desc()).all()
+
+    result = []
+    for comment in top_comments:
+        from_user = db.query(UserDB).filter(UserDB.username == comment.from_username).first()
+        comment_data = {
+            "id": comment.id,
+            "from_username": comment.from_username,
+            "from_name": from_user.name if from_user else comment.from_username,
+            "content": comment.content,
+            "created_at": comment.created_at,
+            "parent_id": comment.parent_id,
+            "replies": []
+        }
+        # 获取直接回复
+        replies = db.query(CommentDB).filter(
+            CommentDB.parent_id == comment.id
+        ).order_by(CommentDB.id.asc()).all()
+        for reply in replies:
+            reply_user = db.query(UserDB).filter(UserDB.username == reply.from_username).first()
+            comment_data["replies"].append({
+                "id": reply.id,
+                "from_username": reply.from_username,
+                "from_name": reply_user.name if reply_user else reply.from_username,
+                "content": reply.content,
+                "created_at": reply.created_at,
+                "parent_id": reply.parent_id
+            })
+        result.append(comment_data)
+    return {"code": 200, "data": result}
+
+@app.delete("/api/comment/{comment_id}")
+async def delete_comment(comment_id: int, username: str, db: Session = Depends(get_db)):
+    comment = db.query(CommentDB).filter(CommentDB.id == comment_id).first()
+    if not comment:
+        return {"code": 404, "msg": "评论不存在"}
+    user = db.query(UserDB).filter(UserDB.username == username).first()
+    if not user:
+        return {"code": 404, "msg": "用户不存在"}
+    # 权限：评论者本人或管理员可删除；管理员可以删除任何评论，评论者只能删除自己的
+    if comment.from_username != username and user.role != "admin":
+        return {"code": 403, "msg": "无删除权限"}
+    # 同时删除该评论的所有子回复
+    db.query(CommentDB).filter(CommentDB.parent_id == comment_id).delete(synchronize_session=False)
+    db.delete(comment)
+    db.commit()
+    return {"code": 200, "msg": "删除成功"}
+
+# ========== 退出登录 ==========
 @app.post("/api/auth/logout")
 async def logout():
-    # 前端清除localStorage即可，后端无session，直接返回成功
     return {"code": 200, "msg": "退出成功"}
+
 # ========== 启动入口 ==========
 if __name__ == '__main__':
     import uvicorn
-    # 自动读取Render分配的端口，本地默认5000
     port = int(os.environ.get("PORT", 5000))
     uvicorn.run(app, host="0.0.0.0", port=port)
