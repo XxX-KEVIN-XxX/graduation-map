@@ -361,10 +361,17 @@ async def get_map_points(username: Optional[str] = None, db: Session = Depends(g
         if current_user and current_user.role == "teacher":
             is_teacher = True
 
+    # 点赞数统计
     like_counts = {}
     all_likes = db.query(LikeDB).all()
     for record in all_likes:
         like_counts[record.to_username] = like_counts.get(record.to_username, 0) + 1
+
+    # 评论数统计
+    comment_counts = {}
+    all_comments = db.query(CommentDB).all()
+    for c in all_comments:
+        comment_counts[c.to_username] = comment_counts.get(c.to_username, 0) + 1
 
     user_liked_set = set()
     if username and not is_teacher:
@@ -382,7 +389,8 @@ async def get_map_points(username: Optional[str] = None, db: Session = Depends(g
             "district": user.district,
             "message": user.message if not is_teacher else "",
             "like_count": like_counts.get(user.username, 0),
-            "is_liked": user.username in user_liked_set
+            "is_liked": user.username in user_liked_set,
+            "comment_count": comment_counts.get(user.username, 0)   # 新增评论数
         })
     return {"code": 200, "data": points}
 
