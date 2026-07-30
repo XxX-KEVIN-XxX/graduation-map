@@ -1,14 +1,13 @@
 import os
 from datetime import datetime, timezone, timedelta
 from fastapi import FastAPI, Request, HTTPException, Depends, Body, Query
-from fastapi.responses import HTMLResponse, Response
+from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from typing import Optional
 from pathlib import Path
-import httpx                    # 新增：用于代理在线请求
 
 # ========== 数据库相关导入 ==========
 from sqlalchemy import create_engine, Column, Integer, String, Text, UniqueConstraint, ForeignKey
@@ -80,8 +79,10 @@ class CommentDB(Base):
     parent_id = Column(Integer, ForeignKey("comments.id"), nullable=True)
     parent = relationship("CommentDB", remote_side=[id], backref="replies")
 
+# 启动时自动建表
 Base.metadata.create_all(bind=engine)
 
+# 数据库会话依赖
 def get_db():
     db = SessionLocal()
     try:
@@ -112,7 +113,7 @@ def init_default_admin():
     db.close()
 init_default_admin()
 
-# ========== 请求数据模型（与之前相同） ==========
+# ========== 请求数据模型 ==========
 class LoginReq(BaseModel):
     username: str
     password: str
@@ -157,7 +158,7 @@ async def change_password_page(request: Request):
 async def admin_users_page(request: Request):
     return templates.TemplateResponse(request=request, name="admin_users.html")
 
-# ========== 登录接口（原样保留） ==========
+# ========== 登录接口 ==========
 @app.post("/api/auth/login")
 async def login(req: LoginReq, db: Session = Depends(get_db)):
     user = db.query(UserDB).filter(UserDB.username == req.username).first()
@@ -175,7 +176,7 @@ async def login(req: LoginReq, db: Session = Depends(get_db)):
     }
     return {"code": 200, "msg": "登录成功", "data": user_info}
 
-# ========== 用户修改自身信息 ==========
+# ========== 普通用户修改信息 ==========
 @app.put("/api/user/self")
 async def update_self(username: str, req: UserEditReq, db: Session = Depends(get_db)):
     user = db.query(UserDB).filter(UserDB.username == username).first()
@@ -216,7 +217,7 @@ async def change_password(req: ChangePasswordReq, db: Session = Depends(get_db))
     db.commit()
     return {"code": 200, "msg": "密码修改成功，请重新登录"}
 
-# ========== 管理员接口（原样保留） ==========
+# ========== 管理员接口 ==========
 @app.get("/api/admin/users")
 async def get_all_users(admin_name: str, db: Session = Depends(get_db)):
     admin = db.query(UserDB).filter(UserDB.username == admin_name).first()
@@ -227,6 +228,7 @@ async def get_all_users(admin_name: str, db: Session = Depends(get_db)):
     all_likes = db.query(LikeDB).all()
     for record in all_likes:
         like_counts[record.to_username] = like_counts.get(record.to_username, 0) + 1
+
     user_list = []
     for user in users:
         user_list.append({
@@ -291,7 +293,7 @@ async def remove_user(admin_name: str, target_user: str, db: Session = Depends(g
     db.commit()
     return {"code": 200, "msg": "删除成功"}
 
-# ========== 点赞接口（原样保留） ==========
+# ========== 点赞接口 ==========
 @app.post("/api/like/{to_username}")
 async def toggle_like(from_username: str, to_username: str, db: Session = Depends(get_db)):
     from_user = db.query(UserDB).filter(UserDB.username == from_username).first()
@@ -349,7 +351,7 @@ async def get_like_status(to_username: str, from_username: Optional[str] = None,
         }
     }
 
-# ========== 地图点位接口（原样保留） ==========
+# ========== 地图点位接口 ==========
 @app.get("/api/map/points")
 async def get_map_points(username: Optional[str] = None, db: Session = Depends(get_db)):
     users = db.query(UserDB).all()
@@ -359,11 +361,13 @@ async def get_map_points(username: Optional[str] = None, db: Session = Depends(g
         if current_user and current_user.role == "teacher":
             is_teacher = True
 
+    # 点赞数统计
     like_counts = {}
     all_likes = db.query(LikeDB).all()
     for record in all_likes:
         like_counts[record.to_username] = like_counts.get(record.to_username, 0) + 1
 
+    # 评论数统计
     comment_counts = {}
     all_comments = db.query(CommentDB).all()
     for c in all_comments:
@@ -386,11 +390,11 @@ async def get_map_points(username: Optional[str] = None, db: Session = Depends(g
             "message": user.message if not is_teacher else "",
             "like_count": like_counts.get(user.username, 0),
             "is_liked": user.username in user_liked_set,
-            "comment_count": comment_counts.get(user.username, 0)
+            "comment_count": comment_counts.get(user.username, 0)   # 新增评论数
         })
     return {"code": 200, "data": points}
 
-# ========== 评论接口（原样保留） ==========
+# ========== 评论接口（支持回复，使用北京时间） ==========
 @app.post("/api/comment/{to_username}")
 async def add_comment(
     to_username: str,
@@ -414,6 +418,7 @@ async def add_comment(
         if not parent_comment:
             return {"code": 404, "msg": "父评论不存在"}
 
+    # 使用北京时间
     now = beijing_now()
     new_comment = CommentDB(
         to_username=to_username,
@@ -484,40 +489,10 @@ async def delete_comment(comment_id: int, username: str, db: Session = Depends(g
     db.commit()
     return {"code": 200, "msg": "删除成功"}
 
+# ========== 退出登录 ==========
 @app.post("/api/auth/logout")
 async def logout():
     return {"code": 200, "msg": "退出成功"}
-
-# ==================== 新增：在线资源代理接口 ====================
-
-# 代理 DataV 的 GeoJSON 数据
-@app.get("/api/geojson/{adcode}")
-async def proxy_geojson(adcode: str):
-    url = f"https://geo.datav.aliyun.com/areas_v3/bound/{adcode}_full.json"
-    async with httpx.AsyncClient() as client:
-        resp = await client.get(url, timeout=10.0)
-        if resp.status_code == 200:
-            return resp.json()
-        else:
-            raise HTTPException(status_code=404, detail="GeoJSON not found")
-
-# 代理 Nominatim 地理编码（地址 → 坐标）
-@app.get("/api/geocode")
-async def proxy_geocode(q: str):
-    url = "https://nominatim.openstreetmap.org/search"
-    params = {
-        "q": q,
-        "format": "json",
-        "limit": 1,
-        "accept-language": "zh"   # 优先中文结果
-    }
-    headers = {"User-Agent": "GraduationMapApp/1.0 (contact@example.com)"}
-    async with httpx.AsyncClient() as client:
-        resp = await client.get(url, params=params, headers=headers, timeout=10.0)
-        if resp.status_code == 200:
-            return resp.json()
-        else:
-            raise HTTPException(status_code=404, detail="Geocode failed")
 
 # ========== 启动入口 ==========
 if __name__ == '__main__':
