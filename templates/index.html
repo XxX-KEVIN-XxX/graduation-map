@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>毕业地图 · 在地球上见</title>
-    <script src="https://cdn.bootcdn.net/ajax/libs/echarts/5.4.3/echarts.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/echarts/5.4.3/echarts.min.js">
+    </script>
     <style>
         * {
             margin: 0;
@@ -20,7 +21,6 @@
             overflow: hidden;
         }
 
-        /* 顶部标题栏 */
         .header {
             height: 90px;
             padding: 0 40px;
@@ -70,13 +70,11 @@
             color: #fff;
         }
 
-        /* 主体区域 */
         .main {
             display: flex;
             height: calc(100vh - 90px);
         }
 
-        /* 地图区域 */
         .map-container {
             flex: 1;
             position: relative;
@@ -167,7 +165,6 @@
             color: #c0504d;
         }
 
-        /* 右侧侧边栏 */
         .sidebar {
             width: 340px;
             background: #fffdf8;
@@ -176,7 +173,6 @@
             overflow-y: auto;
         }
 
-        /* 侧边栏滚动条美化 */
         .sidebar::-webkit-scrollbar {
             width: 6px;
         }
@@ -225,7 +221,6 @@
             display: none;
         }
 
-        /* 搜索框 */
         .search-box {
             margin-bottom: 16px;
         }
@@ -247,7 +242,6 @@
             border-color: #c7b59a;
         }
 
-        /* 同学列表 */
         .classmates-list {
             margin-top: 10px;
         }
@@ -291,10 +285,43 @@
             text-overflow: ellipsis;
         }
 
-        /* ========== 新增：老师账号留言提示样式 ========== */
         .msg-hide-tip {
             color: #b09d80;
             font-style: italic;
+        }
+
+        /* 新增点赞样式 */
+        .like-area {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 8px;
+            font-size: 13px;
+            color: #998670;
+        }
+
+        .like-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            color: #c0504d;
+            padding: 0;
+            line-height: 1;
+            transition: transform 0.2s;
+            font-family: inherit;
+        }
+
+        .like-btn:hover {
+            transform: scale(1.2);
+        }
+
+        .like-btn.liked {
+            color: #c0504d;
+        }
+
+        .like-count {
+            user-select: none;
         }
 
         .form-group {
@@ -308,7 +335,9 @@
             margin-bottom: 6px;
         }
 
-        .form-group input, .form-group textarea, .form-group select {
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
             width: 100%;
             padding: 8px 10px;
             border: 1px solid #d9cbb8;
@@ -321,7 +350,9 @@
             transition: border-color 0.2s;
         }
 
-        .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
             border-color: #c7b59a;
         }
 
@@ -373,7 +404,6 @@
             background: #f0e6d6;
         }
 
-        /* 用户管理列表 */
         .user-list {
             margin-top: 10px;
         }
@@ -454,7 +484,6 @@
             border-style: solid;
         }
 
-        /* 弹窗通用样式 */
         .modal-mask {
             position: fixed;
             top: 0;
@@ -509,7 +538,6 @@
     </style>
 </head>
 <body>
-<!-- 顶部 -->
 <div class="header">
     <div class="header-left">
         <h2>学军紫金港2025届4班 · 毕业地图</h2>
@@ -521,9 +549,7 @@
     </div>
 </div>
 
-<!-- 主体 -->
 <div class="main">
-    <!-- 地图 -->
     <div class="map-container">
         <button class="map-back-btn" id="backBtn" onclick="goBack()">← 返回上一级</button>
         <div class="map-loading" id="mapLoading">地图加载中...</div>
@@ -534,7 +560,6 @@
         </div>
     </div>
 
-    <!-- 侧边栏 -->
     <div class="sidebar">
         <div class="tab-bar">
             <div class="tab-item active" onclick="switchTab('classmates')">同学列表</div>
@@ -542,16 +567,13 @@
             <div class="tab-item admin-tab" id="adminTab" onclick="switchTab('admin')">用户管理</div>
         </div>
 
-        <!-- 同学列表面板 -->
         <div id="classmatesPanel">
             <div class="search-box">
-                <input type="text" id="searchInput" placeholder="搜索同学姓名..."
-                       oninput="filterClassmates(this.value)">
+                <input type="text" id="searchInput" placeholder="搜索同学姓名..." oninput="filterClassmates(this.value)">
             </div>
             <div class="classmates-list" id="classmatesList"></div>
         </div>
 
-        <!-- 个人信息面板 -->
         <div id="selfPanel" style="display:none;">
             <div class="form-group">
                 <label>姓名 <span style="color:#c0504d;">*</span></label>
@@ -581,7 +603,6 @@
             <button class="cancel-btn" onclick="showChangePwdModal()">修改密码</button>
         </div>
 
-        <!-- 管理员面板 -->
         <div id="adminPanel" style="display:none;">
             <button class="add-user-btn" onclick="showAddModal()">+ 新增用户</button>
             <div class="user-list" id="userList"></div>
@@ -589,11 +610,9 @@
     </div>
 </div>
 
-<!-- 管理员编辑用户弹窗 -->
 <div class="modal-mask" id="adminEditModal" onclick="if(event.target===this) closeAdminModal()">
     <div class="modal-content">
         <div class="modal-title" id="adminModalTitle">编辑用户信息</div>
-        <!-- ========== 新增：用户名字段（新增时可填，编辑时禁用） ========== -->
         <div class="form-group" id="adminEditUsernameGroup">
             <label>账号 <span style="color:#c0504d;">*</span></label>
             <input type="text" id="adminEditUsername" placeholder="登录用的用户名">
@@ -607,7 +626,6 @@
             <input type="text" id="adminEditPassword" placeholder="留空则不修改密码">
             <div class="form-tip">编辑用户时留空保持原密码不变，新增用户必填</div>
         </div>
-        <!-- ========== 新增：角色选择下拉框 ========== -->
         <div class="form-group">
             <label>用户角色</label>
             <select id="adminEditRole">
@@ -644,7 +662,6 @@
     </div>
 </div>
 
-<!-- 个人修改密码弹窗 -->
 <div class="modal-mask" id="changePwdModal" onclick="if(event.target===this) closeChangePwdModal()">
     <div class="modal-content" style="width: 360px;">
         <div class="modal-title">修改密码</div>
@@ -668,14 +685,14 @@
 </div>
 
 <script>
-    // ========== 全局常量配置 ==========
+    // ========== 全局常量 ==========
     const API_BASE = '/api';
     const MAP_BASE = '/static/maps';
 
     // ========== 全局变量 ==========
     let currentUser = JSON.parse(localStorage.getItem('currentUser'));
     let mapChart = null;
-    let mapLevel = 'world'; // world / country / province / city
+    let mapLevel = 'world';
     let currentGeoJson = null;
     let currentProvinceName = '';
     let currentCityName = '';
@@ -683,16 +700,13 @@
     let worldMapLoaded = false;
     let adminUserList = [];
     let currentEditUsername = '';
-    // ========== 新增：标记当前弹窗是新增还是编辑模式 ==========
-    let adminModalMode = 'edit'; // edit / add
+    let adminModalMode = 'edit';
 
-    // 异步锁与定时器
     let loadMapLock = '';
     let locateTimer = null;
     let searchTimer = null;
     let highlightTimer = null;
 
-    // 地图资源缓存
     const mapCache = {};
 
     // ========== 省份行政代码映射 ==========
@@ -711,7 +725,7 @@
         '澳门特别行政区': '820000', '台湾省': '710000'
     };
 
-    // ========== 标准经纬度坐标库（简称key，兼容全称） ==========
+    // ========== 标准经纬度坐标库 ==========
     const cityCoords = {
         '哈尔滨': [126.5349, 45.8038], '西安': [108.9398, 34.3416],
         '北京': [116.4074, 39.9042], '天津': [117.2009, 39.0842],
@@ -730,7 +744,6 @@
         '纽约': [-74.0060, 40.7128], '悉尼': [151.2093, -33.8688]
     };
 
-    // 省份中心坐标（简称key）
     const provinceCoords = {
         '黑龙江': [126.5349, 45.8038], '陕西': [108.9398, 34.3416],
         '北京': [116.4074, 39.9042], '天津': [117.2009, 39.0842],
@@ -743,55 +756,45 @@
         '河南': [114.3075, 34.8009]
     };
 
-    // 区县标准经纬度坐标
     const districtCoords = {
-        // 杭州市
         '上城': [120.1750, 30.2460], '拱墅': [120.1500, 30.3200],
         '西湖': [120.1300, 30.2700], '滨江': [120.2100, 30.2000],
         '萧山': [120.2700, 30.1800], '余杭': [120.3000, 30.4100],
         '临平': [120.3000, 30.4200], '富阳': [119.9500, 30.0700],
         '临安': [119.7200, 30.2300], '桐庐': [119.6700, 29.8000],
         '淳安': [119.0300, 29.6100], '建德': [119.2800, 29.4900],
-        "钱塘": [120.32, 30.31], "余杭": [120.01, 30.40],
-        // 宁波市
+        '钱塘': [120.32, 30.31], '余杭': [120.01, 30.40],
         '海曙': [121.5500, 29.8700], '江北': [121.5300, 29.9200],
         '北仑': [121.8500, 29.9100], '镇海': [121.7200, 30.0000],
         '鄞州': [121.5500, 29.8200], '奉化': [121.4200, 29.6700],
         '余姚': [121.1500, 30.0500], '慈溪': [121.2500, 30.1800],
         '象山': [121.8800, 29.4800], '宁海': [121.4200, 29.3000],
-        // 温州市
         '鹿城': [120.6500, 28.0200], '龙湾': [120.7500, 27.9800],
         '瓯海': [120.6200, 28.0000], '瑞安': [120.6600, 27.7800],
         '乐清': [120.9500, 28.1500],
-        // 金华市
         '婺城': [119.6500, 29.0900], '金东': [119.6400, 29.0800],
         '义乌': [120.0600, 29.3200], '东阳': [120.2300, 29.2700],
         '永康': [120.0200, 28.9200]
     };
 
-    // ========== 通用工具函数 ==========
-    // 名称简化（兼容全称/简称）
     function shortName(name) {
         if (!name) return '';
-        return name.trim()
-                .replace(/省|市|区|县|自治区|特别行政区|壮族|回族|维吾尔/g, '');
+        return name.trim().replace(/省|市|区|县|自治区|特别行政区|壮族|回族|维吾尔/g, '');
     }
 
-    // 统一请求封装
     function request(url, options = {}) {
         return fetch(url, {
-            headers: {'Content-Type': 'application/json', ...options.headers},
+            headers: { 'Content-Type': 'application/json', ...options.headers },
             ...options
         })
-                .then(res => res.json())
-                .catch(err => {
-                    console.error('请求失败:', err);
-                    alert('网络请求失败，请检查服务状态');
-                    throw err;
-                });
+            .then(res => res.json())
+            .catch(err => {
+                console.error('请求失败:', err);
+                alert('网络请求失败，请检查服务状态');
+                throw err;
+            });
     }
 
-    // ========== 点位大小分级规则 ==========
     function getSymbolSize(val, params) {
         if (mapLevel === 'world') return 10;
         if (mapLevel === 'country') return 14;
@@ -810,8 +813,6 @@
         return 10;
     }
 
-    // ========== 数据聚合函数 ==========
-
     function formatWorldPoints() {
         const cityMap = {};
         allPoints.forEach(p => {
@@ -819,7 +820,6 @@
             const cityShort = shortName(cityName);
             if (!cityMap[cityShort]) {
                 const coord = cityCoords[cityShort] || cityCoords[shortName(p.province)] || [0, 0];
-                // 国外无坐标时不显示到中国默认位置
                 if (p.country !== '中国' && coord[0] === 0 && coord[1] === 0) return;
                 cityMap[cityShort] = {
                     name: cityName,
@@ -849,12 +849,10 @@
     function formatCityPoints() {
         const cityMap = {};
         const targetShort = shortName(currentProvinceName);
-
         allPoints.forEach(p => {
             if (!p.city) return;
             const provShort = shortName(p.province || '');
             if (currentProvinceName && provShort !== targetShort) return;
-
             const cityName = p.city.trim();
             const cityShort = shortName(cityName);
             if (!cityMap[cityShort]) {
@@ -871,12 +869,10 @@
     function formatDistrictPoints() {
         const districtMap = {};
         const targetShort = shortName(currentCityName);
-
         allPoints.forEach(p => {
             if (!p.district || p.district.trim() === '') return;
             const cityShort = shortName(p.city || '');
             if (currentCityName && cityShort !== targetShort) return;
-
             const districtName = p.district.trim();
             const districtShort = shortName(districtName);
             if (!districtMap[districtShort]) {
@@ -890,7 +886,6 @@
         return Object.values(districtMap);
     }
 
-    // 生成点位tooltip内容（显示同学姓名）
     function getPointTooltip(name, level) {
         let list = [];
         if (level === 'world') {
@@ -906,12 +901,65 @@
         return `${name}<br/>共 ${list.length} 位同学<br/><span style="font-size:12px;color:#998670;">${names || '暂无'}</span>`;
     }
 
-    // ========== 同学列表渲染 + 搜索过滤 ==========
+    // 点赞相关函数
+    function toggleLike(toUsername, btnElement) {
+        if (btnElement.disabled) return;
+        btnElement.disabled = true;
+
+        request(`${API_BASE}/like/${encodeURIComponent(toUsername)}?from_username=${encodeURIComponent(currentUser.username)}`, {
+            method: 'POST'
+        })
+            .then(res => {
+                btnElement.disabled = false;
+                if (res.code === 200) {
+                    const { liked, like_count } = res.data;
+                    btnElement.innerHTML = liked ? '❤️' : '🤍';
+                    btnElement.className = `like-btn ${liked ? 'liked' : ''}`;
+                    btnElement.title = liked ? '取消点赞' : '点赞';
+                    const countSpan = btnElement.parentElement.querySelector('.like-count');
+                    if (countSpan) countSpan.textContent = like_count;
+
+                    const student = allPoints.find(p => p.username === toUsername);
+                    if (student) {
+                        student.is_liked = liked;
+                        student.like_count = like_count;
+                    }
+                } else if (res.code === 403) {
+                    alert(res.msg || '操作被禁止');
+                } else {
+                    alert(res.msg || '操作失败');
+                }
+            })
+            .catch(() => {
+                btnElement.disabled = false;
+            });
+    }
+
+    // 工具函数：为地图tooltip添加点赞总数（教师角色不显示）
+    function appendLikeCountToTooltip(baseStr, level, name) {
+        if (currentUser.role === 'teacher') return baseStr;
+        let students = [];
+        if (level === 'world') {
+            students = allPoints.filter(p => shortName(p.city || p.province) === shortName(name));
+        } else if (level === 'country') {
+            students = allPoints.filter(p => shortName(p.province) === shortName(name));
+        } else if (level === 'province') {
+            students = allPoints.filter(p => shortName(p.city) === shortName(name));
+        } else if (level === 'city') {
+            students = allPoints.filter(p => shortName(p.district) === shortName(name));
+        }
+        const totalLikes = students.reduce((sum, s) => sum + (s.like_count || 0), 0);
+        if (totalLikes > 0) {
+            baseStr += `<br/>❤️ ${totalLikes} 赞`;
+        }
+        return baseStr;
+    }
+
+    // 同学列表渲染
     function renderClassmatesList(keyword = '') {
         const container = document.getElementById('classmatesList');
         const list = [];
         const kw = keyword.trim().toLowerCase();
-        // ========== 新增：判断当前用户是不是老师 ==========
         const isTeacher = currentUser.role === 'teacher';
 
         allPoints.forEach((p, i) => {
@@ -927,15 +975,22 @@
         }
 
         container.innerHTML = list.map(u => `
-                <div class="classmate-item" data-index="${u.index}" onclick="locateStudentByIndex(this)">
-                    <div class="classmate-name">${u.name}</div>
-                    <div class="classmate-loc">${u.country} ${u.province || ''} ${u.city || ''} ${u.district || ''}</div>
-                    <!-- ========== 修改：老师账号显示不可查看提示，否则显示原留言 ========== -->
-                    <div class="classmate-msg">
-                        ${isTeacher ? '<span class="msg-hide-tip"> </span>' : (u.message || '暂无留言')}
-                    </div>
+            <div class="classmate-item" data-index="${u.index}" onclick="locateStudentByIndex(this)">
+                <div class="classmate-name">${u.name}</div>
+                <div class="classmate-loc">${u.country} ${u.province || ''} ${u.city || ''} ${u.district || ''}</div>
+                <div class="classmate-msg">
+                    ${isTeacher ? '<span class="msg-hide-tip">暂无留言</span>' : (u.message || '暂无留言')}
                 </div>
-            `).join('');
+                ${!isTeacher ? `
+                <div class="like-area" onclick="event.stopPropagation();">
+                    <button class="like-btn ${u.is_liked ? 'liked' : ''}" onclick="toggleLike('${u.username}', this)" title="${u.is_liked ? '取消点赞' : '点赞'}">
+                        ${u.is_liked ? '❤️' : '🤍'}
+                    </button>
+                    <span class="like-count">${u.like_count || 0}</span>
+                </div>
+                ` : ''}
+            </div>
+        `).join('');
     }
 
     function filterClassmates(keyword) {
@@ -945,7 +1000,6 @@
         }, 300);
     }
 
-    // ========== 定位到指定同学 ==========
     function locateStudentByIndex(el) {
         const idx = el.dataset.index;
         const student = allPoints[idx];
@@ -961,7 +1015,6 @@
         const city = student.city || '';
         const district = student.district || '';
 
-        // 获取最优坐标
         let coord = null;
         let highlightName = '';
         if (district && districtCoords[shortName(district)]) {
@@ -983,7 +1036,6 @@
             return;
         }
 
-        // 国外：世界地图定位
         if (country !== '中国') {
             renderWorldMap();
             bindWorldClick();
@@ -994,7 +1046,6 @@
             return;
         }
 
-        // 国内无省份：中国地图定位
         if (!province) {
             loadChinaMap();
             locateTimer = setTimeout(() => {
@@ -1004,7 +1055,6 @@
             return;
         }
 
-        // 匹配省份adcode
         let provAdcode = null;
         for (let fullName in provinceAdcodeMap) {
             if (shortName(fullName) === shortName(province)) {
@@ -1021,7 +1071,6 @@
             return;
         }
 
-        // 有省份无城市：省级地图定位
         if (!city) {
             loadProvinceMap(provAdcode, province);
             locateTimer = setTimeout(() => {
@@ -1031,7 +1080,6 @@
             return;
         }
 
-        // 有城市无区县：省级地图定位到城市
         if (!district) {
             loadProvinceMap(provAdcode, province);
             locateTimer = setTimeout(() => {
@@ -1041,7 +1089,6 @@
             return;
         }
 
-        // 有区县：下钻到市级地图定位
         loadProvinceMap(provAdcode, province);
         locateTimer = setTimeout(() => {
             const cityAdcode = getAdcodeByName(currentGeoJson, city);
@@ -1058,7 +1105,6 @@
         }, 500);
     }
 
-    // 高亮指定点位
     function highlightPoint(name) {
         if (!name || !mapChart) return;
         mapChart.dispatchAction({type: 'highlight', seriesIndex: 0, name: name});
@@ -1067,20 +1113,18 @@
         }, 2000);
     }
 
-    // ========== 页面初始化 ==========
     window.onload = function () {
         if (!currentUser) {
             window.location.href = '/';
             return;
         }
-        // ========== 修改：角色显示支持老师 ==========
         const roleText = {
             'admin': '管理员',
             'user': '成员',
             'teacher': '老师'
         }[currentUser.role] || '成员';
         document.getElementById('currentUserName').textContent =
-                currentUser.name + '（' + roleText + '）';
+            currentUser.name + '（' + roleText + '）';
 
         if (currentUser.role === 'admin') {
             document.getElementById('adminTab').style.display = 'block';
@@ -1088,7 +1132,6 @@
 
         mapChart = echarts.init(document.getElementById('map'));
         window.addEventListener('resize', () => mapChart.resize());
-        // ESC快捷键返回上一级
         document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape') goBack();
         });
@@ -1098,25 +1141,23 @@
         initWorldMap();
     };
 
-    // ========== 通用地图加载（带缓存） ==========
     function loadMapJson(adcode, mapName) {
         const cacheKey = adcode;
         if (mapCache[cacheKey]) {
             return Promise.resolve(mapCache[cacheKey]);
         }
         return fetch(`${MAP_BASE}/${adcode}_full.json`)
-                .then(res => {
-                    if (!res.ok) throw new Error('地图文件不存在');
-                    return res.json();
-                })
-                .then(geoJson => {
-                    mapCache[cacheKey] = geoJson;
-                    echarts.registerMap(mapName, geoJson);
-                    return geoJson;
-                });
+            .then(res => {
+                if (!res.ok) throw new Error('地图文件不存在');
+                return res.json();
+            })
+            .then(geoJson => {
+                mapCache[cacheKey] = geoJson;
+                echarts.registerMap(mapName, geoJson);
+                return geoJson;
+            });
     }
 
-    // ========== 1. 世界地图 ==========
     function initWorldMap() {
         showLoading();
         const lockKey = 'world';
@@ -1131,24 +1172,24 @@
         }
 
         fetch(`${MAP_BASE}/world.json`)
-                .then(res => {
-                    if (!res.ok) throw new Error('世界地图文件不存在');
-                    return res.json();
-                })
-                .then(worldJson => {
-                    if (loadMapLock !== lockKey) return;
-                    mapCache['world'] = worldJson;
-                    echarts.registerMap('world', worldJson);
-                    worldMapLoaded = true;
-                    hideLoading();
-                    renderWorldMap();
-                    bindWorldClick();
-                })
-                .catch(() => {
-                    if (loadMapLock !== lockKey) return;
-                    document.getElementById('mapLoading').innerHTML =
-                            '世界地图加载失败，请检查地图文件是否存在<br/><button onclick="initWorldMap()">重试</button>';
-                });
+            .then(res => {
+                if (!res.ok) throw new Error('世界地图文件不存在');
+                return res.json();
+            })
+            .then(worldJson => {
+                if (loadMapLock !== lockKey) return;
+                mapCache['world'] = worldJson;
+                echarts.registerMap('world', worldJson);
+                worldMapLoaded = true;
+                hideLoading();
+                renderWorldMap();
+                bindWorldClick();
+            })
+            .catch(() => {
+                if (loadMapLock !== lockKey) return;
+                document.getElementById('mapLoading').innerHTML =
+                    '世界地图加载失败，请检查地图文件是否存在<br/><button onclick="initWorldMap()">重试</button>';
+            });
     }
 
     function renderWorldMap() {
@@ -1166,10 +1207,9 @@
                 borderWidth: 1,
                 textStyle: {color: '#5a4a35', fontSize: 12},
                 formatter: function (params) {
-                    if (params.componentType === 'geo') {
-                        return params.name;
-                    }
-                    return getPointTooltip(params.name, 'world');
+                    if (params.componentType === 'geo') return params.name;
+                    let base = getPointTooltip(params.name, 'world');
+                    return appendLikeCountToTooltip(base, 'world', params.name);
                 }
             },
             geo: {
@@ -1231,25 +1271,24 @@
         });
     }
 
-    // ========== 2. 中国省级地图 ==========
     function loadChinaMap() {
         showLoading();
         const lockKey = 'china';
         loadMapLock = lockKey;
 
         loadMapJson('100000', 'china')
-                .then(geoJson => {
-                    if (loadMapLock !== lockKey) return;
-                    currentGeoJson = geoJson;
-                    hideLoading();
-                    renderChinaMap();
-                    bindProvinceClick(geoJson);
-                })
-                .catch(() => {
-                    if (loadMapLock !== lockKey) return;
-                    hideLoading();
-                    alert('中国地图加载失败，请检查地图文件是否存在');
-                });
+            .then(geoJson => {
+                if (loadMapLock !== lockKey) return;
+                currentGeoJson = geoJson;
+                hideLoading();
+                renderChinaMap();
+                bindProvinceClick(geoJson);
+            })
+            .catch(() => {
+                if (loadMapLock !== lockKey) return;
+                hideLoading();
+                alert('中国地图加载失败，请检查地图文件是否存在');
+            });
     }
 
     function renderChinaMap() {
@@ -1267,10 +1306,9 @@
                 borderWidth: 1,
                 textStyle: {color: '#5a4a35', fontSize: 12},
                 formatter: function (params) {
-                    if (params.componentType === 'geo') {
-                        return params.name;
-                    }
-                    return getPointTooltip(params.name, 'country');
+                    if (params.componentType === 'geo') return params.name;
+                    let base = getPointTooltip(params.name, 'country');
+                    return appendLikeCountToTooltip(base, 'country', params.name);
                 }
             },
             geo: {
@@ -1320,7 +1358,6 @@
         });
     }
 
-    // ========== 3. 省级（市级）地图 ==========
     function loadProvinceMap(adcode, name) {
         currentProvinceName = name || '';
         currentCityName = '';
@@ -1329,18 +1366,18 @@
         loadMapLock = lockKey;
 
         loadMapJson(adcode, 'province')
-                .then(geoJson => {
-                    if (loadMapLock !== lockKey) return;
-                    currentGeoJson = geoJson;
-                    hideLoading();
-                    renderProvinceMap();
-                    bindCityClick(geoJson);
-                })
-                .catch(() => {
-                    if (loadMapLock !== lockKey) return;
-                    hideLoading();
-                    alert(`省级地图加载失败，请检查 ${adcode}_full.json 文件是否存在`);
-                });
+            .then(geoJson => {
+                if (loadMapLock !== lockKey) return;
+                currentGeoJson = geoJson;
+                hideLoading();
+                renderProvinceMap();
+                bindCityClick(geoJson);
+            })
+            .catch(() => {
+                if (loadMapLock !== lockKey) return;
+                hideLoading();
+                alert(`省级地图加载失败，请检查 ${adcode}_full.json 文件是否存在`);
+            });
     }
 
     function renderProvinceMap() {
@@ -1356,10 +1393,9 @@
                 borderWidth: 1,
                 textStyle: {color: '#5a4a35', fontSize: 12},
                 formatter: function (params) {
-                    if (params.componentType === 'geo') {
-                        return params.name;
-                    }
-                    return getPointTooltip(params.name, 'province');
+                    if (params.componentType === 'geo') return params.name;
+                    let base = getPointTooltip(params.name, 'province');
+                    return appendLikeCountToTooltip(base, 'province', params.name);
                 }
             },
             geo: {
@@ -1408,7 +1444,6 @@
         });
     }
 
-    // ========== 4. 区县级地图 ==========
     function loadCityMap(adcode, name) {
         currentCityName = name || '';
         showLoading();
@@ -1416,17 +1451,17 @@
         loadMapLock = lockKey;
 
         loadMapJson(adcode, 'city')
-                .then(geoJson => {
-                    if (loadMapLock !== lockKey) return;
-                    currentGeoJson = geoJson;
-                    hideLoading();
-                    renderCityMap();
-                })
-                .catch(() => {
-                    if (loadMapLock !== lockKey) return;
-                    hideLoading();
-                    alert(`市级地图加载失败，请检查 ${adcode}_full.json 文件是否存在`);
-                });
+            .then(geoJson => {
+                if (loadMapLock !== lockKey) return;
+                currentGeoJson = geoJson;
+                hideLoading();
+                renderCityMap();
+            })
+            .catch(() => {
+                if (loadMapLock !== lockKey) return;
+                hideLoading();
+                alert(`市级地图加载失败，请检查 ${adcode}_full.json 文件是否存在`);
+            });
     }
 
     function renderCityMap() {
@@ -1442,10 +1477,9 @@
                 borderWidth: 1,
                 textStyle: {color: '#5a4a35', fontSize: 12},
                 formatter: function (params) {
-                    if (params.componentType === 'geo') {
-                        return params.name;
-                    }
-                    return getPointTooltip(params.name, 'city');
+                    if (params.componentType === 'geo') return params.name;
+                    let base = getPointTooltip(params.name, 'city');
+                    return appendLikeCountToTooltip(base, 'city', params.name);
                 }
             },
             geo: {
@@ -1484,7 +1518,6 @@
         mapChart.setOption(option, true);
     }
 
-    // ========== 返回上一级 ==========
     function goBack() {
         if (locateTimer) clearTimeout(locateTimer);
         if (highlightTimer) clearTimeout(highlightTimer);
@@ -1507,7 +1540,6 @@
         }
     }
 
-    // ========== 工具函数 ==========
     function getAdcodeByName(geoJson, name) {
         const targetShort = shortName(name);
         for (let feat of geoJson.features) {
@@ -1527,18 +1559,17 @@
         document.getElementById('mapLoading').style.display = 'none';
     }
 
-    // ========== 点位数据加载 ==========
     function loadMapPoints() {
         request(`${API_BASE}/map/points?username=${currentUser.username}`)
-                .then(data => {
-                    allPoints = data.data;
-                    document.getElementById('totalCount').textContent = allPoints.length;
-                    if (worldMapLoaded && mapChart) {
-                        refreshCurrentPoints();
-                    }
-                    const kw = document.getElementById('searchInput')?.value || '';
-                    renderClassmatesList(kw);
-                });
+            .then(data => {
+                allPoints = data.data;
+                document.getElementById('totalCount').textContent = allPoints.length;
+                if (worldMapLoaded && mapChart) {
+                    refreshCurrentPoints();
+                }
+                const kw = document.getElementById('searchInput')?.value || '';
+                renderClassmatesList(kw);
+            });
     }
 
     function refreshCurrentPoints() {
@@ -1548,7 +1579,6 @@
         else if (mapLevel === 'city') renderCityMap();
     }
 
-    // ========== 个人信息 ==========
     function loadSelfInfo() {
         document.getElementById('editName').value = currentUser.name || '';
         document.getElementById('editCountry').value = currentUser.country || '';
@@ -1584,34 +1614,31 @@
             method: 'PUT',
             body: JSON.stringify(data)
         })
-                .then(res => {
-                    btn.disabled = false;
-                    btn.textContent = '保存修改';
-                    if (res.code === 200) {
-                        alert('保存成功');
-                        currentUser = res.data;
-                        localStorage.setItem('currentUser', JSON.stringify(res.data));
-                        // ========== 修改：更新顶部角色显示 ==========
-                        const roleText = {
-                            'admin': '管理员',
-                            'user': '成员',
-                            'teacher': '老师'
-                        }[currentUser.role] || '成员';
-                        document.getElementById('currentUserName').textContent =
-                                currentUser.name + '（' + roleText + '）';
-                        loadMapPoints();
-                    } else {
-                        alert(res.msg || '保存失败');
-                    }
-                })
-                .catch(() => {
-                    btn.disabled = false;
-                    btn.textContent = '保存修改';
-                });
+            .then(res => {
+                btn.disabled = false;
+                btn.textContent = '保存修改';
+                if (res.code === 200) {
+                    alert('保存成功');
+                    currentUser = res.data;
+                    localStorage.setItem('currentUser', JSON.stringify(res.data));
+                    const roleText = {
+                        'admin': '管理员',
+                        'user': '成员',
+                        'teacher': '老师'
+                    }[currentUser.role] || '成员';
+                    document.getElementById('currentUserName').textContent =
+                        currentUser.name + '（' + roleText + '）';
+                    loadMapPoints();
+                } else {
+                    alert(res.msg || '保存失败');
+                }
+            })
+            .catch(() => {
+                btn.disabled = false;
+                btn.textContent = '保存修改';
+            });
     }
 
-
-    // ========== 个人修改密码 ==========
     function showChangePwdModal() {
         document.getElementById('oldPwd').value = '';
         document.getElementById('newPwd').value = '';
@@ -1647,9 +1674,7 @@
 
         request(`${API_BASE}/user/change-password`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
                 username: currentUser.username,
                 old_password: oldPwd,
@@ -1657,29 +1682,27 @@
                 confirm_password: confirmPwd
             })
         })
-                .then(res => {
-                    btn.disabled = false;
-                    btn.textContent = '确认修改';
-                    if (res.code === 200) {
-                        alert('密码修改成功，请重新登录');
-                        closeChangePwdModal();
-                        logout();
-                    } else {
-                        alert(res.msg || '密码修改失败');
-                    }
-                })
-                .catch(() => {
-                    btn.disabled = false;
-                    btn.textContent = '确认修改';
-                });
+            .then(res => {
+                btn.disabled = false;
+                btn.textContent = '确认修改';
+                if (res.code === 200) {
+                    alert('密码修改成功，请重新登录');
+                    closeChangePwdModal();
+                    logout();
+                } else {
+                    alert(res.msg || '密码修改失败');
+                }
+            })
+            .catch(() => {
+                btn.disabled = false;
+                btn.textContent = '确认修改';
+            });
     }
 
-    // ========== 关键修复：挂载到全局 window，让 HTML onclick 可以调用 ==========
     window.showChangePwdModal = showChangePwdModal;
     window.closeChangePwdModal = closeChangePwdModal;
     window.submitChangePwd = submitChangePwd;
 
-    // ========== 标签切换 ==========
     function switchTab(type) {
         document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active'));
         document.getElementById('classmatesPanel').style.display = 'none';
@@ -1699,60 +1722,53 @@
         }
     }
 
-    // ========== 管理员功能 ==========
     function loadAdminUserList() {
         request(`${API_BASE}/admin/users?admin_name=${encodeURIComponent(currentUser.username)}`)
-                .then(res => {
-                    if (res.code === 200) {
-                        adminUserList = res.data;
-                        renderUserList(res.data);
-                    } else {
-                        alert(res.msg || '获取用户列表失败');
-                    }
-                });
+            .then(res => {
+                if (res.code === 200) {
+                    adminUserList = res.data;
+                    renderUserList(res.data);
+                } else {
+                    alert(res.msg || '获取用户列表失败');
+                }
+            });
     }
 
     function renderUserList(users) {
         const container = document.getElementById('userList');
-        // ========== 修改：角色标签支持老师 ==========
         const roleMap = {
             'admin': '管理员',
             'user': '成员',
             'teacher': '老师'
         };
         container.innerHTML = users.map(u => `
-                <div class="user-item">
-                    <div class="name-row">
-                        <span class="name">${u.name}</span>
-                        <span class="role">${roleMap[u.role] || '成员'}</span>
-                    </div>
-                    <div class="loc">${u.country} ${u.province || ''} ${u.city || ''} ${u.district || ''}</div>
-                    <div class="ops">
-                        <button onclick="editUser('${u.username}')">编辑</button>
-                        <button onclick="resetUserPwd('${u.username}')">重置密码</button>
-                        <button onclick="deleteUser('${u.username}')">删除</button>
-                    </div>
+            <div class="user-item">
+                <div class="name-row">
+                    <span class="name">${u.name}</span>
+                    <span class="role">${roleMap[u.role] || '成员'}</span>
                 </div>
-            `).join('');
+                <div class="loc">${u.country} ${u.province || ''} ${u.city || ''} ${u.district || ''}</div>
+                <div class="ops">
+                    <button onclick="editUser('${u.username}')">编辑</button>
+                    <button onclick="resetUserPwd('${u.username}')">重置密码</button>
+                    <button onclick="deleteUser('${u.username}')">删除</button>
+                </div>
+            </div>
+        `).join('');
     }
 
-    // ========== 修改：打开新增/编辑用户弹窗 ==========
     function showAddModal() {
-        // 标记为新增模式
         adminModalMode = 'add';
         currentEditUsername = '';
         document.getElementById('adminModalTitle').textContent = '新增用户';
-        // 用户名输入框启用
         document.getElementById('adminEditUsername').disabled = false;
         document.getElementById('adminEditUsernameGroup').style.display = 'block';
-        // 密码必填提示显示
         document.getElementById('pwdRequiredTip').style.display = 'inline';
 
-        // 清空所有表单
         document.getElementById('adminEditUsername').value = '';
         document.getElementById('adminEditName').value = '';
         document.getElementById('adminEditPassword').value = '';
-        document.getElementById('adminEditRole').value = 'user'; // 默认普通成员
+        document.getElementById('adminEditRole').value = 'user';
         document.getElementById('adminEditCountry').value = '中国';
         document.getElementById('adminEditProvince').value = '';
         document.getElementById('adminEditCity').value = '';
@@ -1762,33 +1778,26 @@
         document.getElementById('adminEditModal').style.display = 'block';
     }
 
-    // 打开编辑弹窗
     function editUser(username) {
         let user = adminUserList.find(u => u.username === username);
         if (!user) {
             user = allPoints.find(p => p.username === username);
         }
-
         if (!user) {
             alert('未找到对应用户信息，请刷新页面重试');
             return;
         }
 
-        // 标记为编辑模式
         adminModalMode = 'edit';
         currentEditUsername = username;
         document.getElementById('adminModalTitle').textContent = '编辑用户信息';
-        // 用户名输入框禁用，不能修改
         document.getElementById('adminEditUsername').disabled = true;
         document.getElementById('adminEditUsernameGroup').style.display = 'block';
-        // 密码必填提示隐藏
         document.getElementById('pwdRequiredTip').style.display = 'none';
 
-        // 填充表单
         document.getElementById('adminEditUsername').value = user.username;
         document.getElementById('adminEditName').value = user.name || '';
         document.getElementById('adminEditPassword').value = '';
-        // ========== 新增：填充角色 ==========
         document.getElementById('adminEditRole').value = user.role || 'user';
         document.getElementById('adminEditCountry').value = user.country || '';
         document.getElementById('adminEditProvince').value = user.province || '';
@@ -1799,7 +1808,6 @@
         document.getElementById('adminEditModal').style.display = 'block';
     }
 
-    // 快速重置密码
     function resetUserPwd(username) {
         const newPwd = prompt('请输入新密码', '1233456');
         if (!newPwd) return;
@@ -1812,19 +1820,17 @@
             method: 'PUT',
             body: JSON.stringify({password: newPwd})
         })
-                .then(res => {
-                    alert(res.msg || '重置成功');
-                });
+            .then(res => {
+                alert(res.msg || '重置成功');
+            });
     }
 
-    // 关闭编辑弹窗
     function closeAdminModal() {
         document.getElementById('adminEditModal').style.display = 'none';
         currentEditUsername = '';
         adminModalMode = 'edit';
     }
 
-    // 保存管理员编辑/新增
     function saveAdminEdit() {
         const btn = document.getElementById('saveAdminBtn');
         const name = document.getElementById('adminEditName').value.trim();
@@ -1836,7 +1842,6 @@
             return;
         }
 
-        // 新增模式：校验用户名和密码
         if (adminModalMode === 'add') {
             const username = document.getElementById('adminEditUsername').value.trim();
             const password = document.getElementById('adminEditPassword').value.trim();
@@ -1868,37 +1873,35 @@
                 message: document.getElementById('adminEditMessage').value.trim()
             };
 
-            // 调用新增接口
             request(`${API_BASE}/admin/users?admin_name=${encodeURIComponent(currentUser.username)}`, {
                 method: 'POST',
                 body: JSON.stringify(data)
             })
-                    .then(res => {
-                        btn.disabled = false;
-                        btn.textContent = '保存';
-                        if (res.code === 200) {
-                            alert('新增成功');
-                            closeAdminModal();
-                            loadAdminUserList();
-                            loadMapPoints();
-                        } else {
-                            alert(res.msg || '新增失败');
-                        }
-                    })
-                    .catch(err => {
-                        btn.disabled = false;
-                        btn.textContent = '保存';
-                        console.error(err);
-                    });
+                .then(res => {
+                    btn.disabled = false;
+                    btn.textContent = '保存';
+                    if (res.code === 200) {
+                        alert('新增成功');
+                        closeAdminModal();
+                        loadAdminUserList();
+                        loadMapPoints();
+                    } else {
+                        alert(res.msg || '新增失败');
+                    }
+                })
+                .catch(err => {
+                    btn.disabled = false;
+                    btn.textContent = '保存';
+                    console.error(err);
+                });
 
         } else {
-            // 编辑模式：原有逻辑 + 角色字段
             if (!currentEditUsername) return;
 
             const data = {
                 name,
                 country,
-                role: role, // 新增角色字段
+                role: role,
                 province: document.getElementById('adminEditProvince').value.trim(),
                 city: document.getElementById('adminEditCity').value.trim(),
                 district: document.getElementById('adminEditDistrict').value.trim(),
@@ -1923,38 +1926,36 @@
                 method: 'PUT',
                 body: JSON.stringify(data)
             })
-                    .then(res => {
-                        btn.disabled = false;
-                        btn.textContent = '保存';
-                        if (res.code === 200) {
-                            alert('修改成功');
-                            closeAdminModal();
-                            loadAdminUserList();
-                            loadMapPoints();
-                            if (currentEditUsername === currentUser.username) {
-                                currentUser = {...currentUser, ...data};
-                                // 移除密码字段，避免存到本地
-                                delete currentUser.password;
-                                localStorage.setItem('currentUser', JSON.stringify(currentUser));
-                                // 更新顶部角色显示
-                                const roleText = {
-                                    'admin': '管理员',
-                                    'user': '成员',
-                                    'teacher': '老师'
-                                }[currentUser.role] || '成员';
-                                document.getElementById('currentUserName').textContent =
-                                        currentUser.name + '（' + roleText + '）';
-                                loadSelfInfo();
-                            }
-                        } else {
-                            alert(res.msg || '修改失败');
+                .then(res => {
+                    btn.disabled = false;
+                    btn.textContent = '保存';
+                    if (res.code === 200) {
+                        alert('修改成功');
+                        closeAdminModal();
+                        loadAdminUserList();
+                        loadMapPoints();
+                        if (currentEditUsername === currentUser.username) {
+                            currentUser = {...currentUser, ...data};
+                            delete currentUser.password;
+                            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+                            const roleText = {
+                                'admin': '管理员',
+                                'user': '成员',
+                                'teacher': '老师'
+                            }[currentUser.role] || '成员';
+                            document.getElementById('currentUserName').textContent =
+                                currentUser.name + '（' + roleText + '）';
+                            loadSelfInfo();
                         }
-                    })
-                    .catch(err => {
-                        btn.disabled = false;
-                        btn.textContent = '保存';
-                        console.error(err);
-                    });
+                    } else {
+                        alert(res.msg || '修改失败');
+                    }
+                })
+                .catch(err => {
+                    btn.disabled = false;
+                    btn.textContent = '保存';
+                    console.error(err);
+                });
         }
     }
 
@@ -1967,18 +1968,30 @@
         request(`${API_BASE}/admin/users/${encodeURIComponent(username)}?admin_name=${encodeURIComponent(currentUser.username)}`, {
             method: 'DELETE'
         })
-                .then(res => {
-                    alert(res.msg || '删除成功');
-                    loadAdminUserList();
-                    loadMapPoints();
-                });
+            .then(res => {
+                alert(res.msg || '删除成功');
+                loadAdminUserList();
+                loadMapPoints();
+            });
     }
 
-    // ========== 退出登录 ==========
     function logout() {
         localStorage.removeItem('currentUser');
         window.location.href = '/';
     }
+
+    // 将全局函数挂载到 window 以支持 HTML onclick
+    window.toggleLike = toggleLike;
+    window.showAddModal = showAddModal;
+    window.editUser = editUser;
+    window.resetUserPwd = resetUserPwd;
+    window.deleteUser = deleteUser;
+    window.closeAdminModal = closeAdminModal;
+    window.saveAdminEdit = saveAdminEdit;
+    window.switchTab = switchTab;
+    window.goBack = goBack;
+    window.saveSelfInfo = saveSelfInfo;
+    window.logout = logout;
 </script>
 </body>
 </html>
