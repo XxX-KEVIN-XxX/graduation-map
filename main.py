@@ -1,6 +1,6 @@
 import os
 from datetime import datetime
-from fastapi import FastAPI, Request, HTTPException, Depends, Body
+from fastapi import FastAPI, Request, HTTPException, Depends, Body, Query
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
@@ -66,12 +66,11 @@ class LikeDB(Base):
 class CommentDB(Base):
     __tablename__ = "comments"
     id = Column(Integer, primary_key=True, index=True)
-    to_username = Column(String(50), nullable=False, index=True)   # 被评论的留言作者
-    from_username = Column(String(50), nullable=False)             # 评论者
+    to_username = Column(String(50), nullable=False, index=True)
+    from_username = Column(String(50), nullable=False)
     content = Column(Text, nullable=False)
     created_at = Column(String(30), nullable=False)
-    parent_id = Column(Integer, ForeignKey("comments.id"), nullable=True)  # 父评论ID，用于回复
-    # 自引用关系
+    parent_id = Column(Integer, ForeignKey("comments.id"), nullable=True)
     parent = relationship("CommentDB", remote_side=[id], backref="replies")
 
 # 启动时自动建表
@@ -134,7 +133,7 @@ class ChangePasswordReq(BaseModel):
 
 class CommentCreateReq(BaseModel):
     content: str
-    parent_id: Optional[int] = None  # 回复某条评论时传入父评论ID
+    parent_id: Optional[int] = None
 
 # ========== 页面路由 ==========
 @app.get("/", response_class=HTMLResponse)
@@ -385,18 +384,10 @@ async def get_map_points(username: Optional[str] = None, db: Session = Depends(g
 @app.post("/api/comment/{to_username}")
 async def add_comment(
     to_username: str,
-    from_username: str = Body(...),
-    req: CommentCreateReq = None,
+    from_username: str = Query(...),
+    req: CommentCreateReq = Body(...),
     db: Session = Depends(get_db)
 ):
-    # 参数处理：支持 query 参数和 body 混合
-    # 为了兼容前端，我们约定 from_username 通过 query 传递，content 和 parent_id 通过 body JSON 传递
-    # 注意：FastAPI 的 Body 只能用于 POST 请求的 JSON 体，所以我们需要调整
-    # 简单起见，我们修改接口：from_username 作为查询参数，content 和 parent_id 作为 JSON body
-    if req is None:
-        # 尝试从请求体中解析
-        return {"code": 400, "msg": "请提供评论内容"}
-
     from_user = db.query(UserDB).filter(UserDB.username == from_username).first()
     if not from_user:
         return {"code": 404, "msg": "评论者账号不存在"}
@@ -406,8 +397,6 @@ async def add_comment(
     to_user = db.query(UserDB).filter(UserDB.username == to_username).first()
     if not to_user:
         return {"code": 404, "msg": "被评论用户不存在"}
-
-    # 允许评论自己的留言，所以不做 from_username == to_username 的限制
 
     parent_id = req.parent_id
     if parent_id is not None:
@@ -437,7 +426,6 @@ async def add_comment(
 
 @app.get("/api/comment/{to_username}")
 async def get_comments(to_username: str, db: Session = Depends(get_db)):
-    # 获取所有顶级评论（parent_id 为 None），并包含回复
     top_comments = db.query(CommentDB).filter(
         CommentDB.to_username == to_username,
         CommentDB.parent_id == None
@@ -455,7 +443,6 @@ async def get_comments(to_username: str, db: Session = Depends(get_db)):
             "parent_id": comment.parent_id,
             "replies": []
         }
-        # 获取直接回复
         replies = db.query(CommentDB).filter(
             CommentDB.parent_id == comment.id
         ).order_by(CommentDB.id.asc()).all()
@@ -480,10 +467,8 @@ async def delete_comment(comment_id: int, username: str, db: Session = Depends(g
     user = db.query(UserDB).filter(UserDB.username == username).first()
     if not user:
         return {"code": 404, "msg": "用户不存在"}
-    # 权限：评论者本人或管理员可删除；管理员可以删除任何评论，评论者只能删除自己的
     if comment.from_username != username and user.role != "admin":
         return {"code": 403, "msg": "无删除权限"}
-    # 同时删除该评论的所有子回复
     db.query(CommentDB).filter(CommentDB.parent_id == comment_id).delete(synchronize_session=False)
     db.delete(comment)
     db.commit()
