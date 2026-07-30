@@ -112,6 +112,7 @@
             .detail-header .detail-name { font-size: 16px; }
             .tab-item { font-size: 12px; }
         }
+
         @media screen and (max-width: 768px) and (orientation: landscape) {
             .header { height: 50px; padding: 0 10px; }
             .header-left h2 { font-size: 14px; }
@@ -300,7 +301,9 @@
         '重庆': [106.5516, 29.5630], '广州': [113.2644, 23.1291], '沈阳': [123.4328, 41.8057],
         '开封': [114.3075, 34.8009], '金华': [119.6495, 29.0895], '厦门': [118.0894, 24.4798],
         '海口': [110.1999, 20.0442], '巴黎': [2.3522, 48.8566], '东京': [139.6917, 35.6895],
-        '伦敦': [-0.1276, 51.5072], '纽约': [-74.0060, 40.7128], '悉尼': [151.2093, -33.8688]
+        '伦敦': [-0.1276, 51.5072], '纽约': [-74.0060, 40.7128], '悉尼': [151.2093, -33.8688],
+        '吉隆坡': [101.6869, 3.1390], '槟城': [100.3288, 5.4141], '新山': [103.7588, 1.4927],
+        '哥打基纳巴卢': [116.0735, 5.9788], '古晋': [110.3593, 1.5533]
     };
     const provinceCoords = {
         '黑龙江': [126.5349, 45.8038], '陕西': [108.9398, 34.3416], '北京': [116.4074, 39.9042],
@@ -322,6 +325,15 @@
         '龙湾': [120.7500, 27.9800], '瓯海': [120.6200, 28.0000], '瑞安': [120.6600, 27.7800],
         '乐清': [120.9500, 28.1500], '婺城': [119.6500, 29.0900], '金东': [119.6400, 29.0800],
         '义乌': [120.0600, 29.3200], '东阳': [120.2300, 29.2700], '永康': [120.0200, 28.9200]
+    };
+    // 国家中心坐标（用于国外城市无法定位时的回退）
+    const countryCoords = {
+        '马来西亚': [101.9758, 4.2105], '日本': [138.2529, 36.2048], '美国': [-95.7129, 37.0902],
+        '英国': [-3.4360, 55.3781], '法国': [2.2137, 46.2276], '德国': [10.4515, 51.1657],
+        '澳大利亚': [133.7751, -25.2744], '加拿大': [-106.3468, 56.1304], '韩国': [127.9785, 35.9078],
+        '新加坡': [103.8198, 1.3521], '泰国': [100.9925, 15.8700], '印度': [78.9629, 20.5937],
+        '俄罗斯': [105.3188, 61.5240], '意大利': [12.5674, 41.8719], '西班牙': [-3.7492, 40.4637],
+        '荷兰': [5.2913, 52.1326], '瑞士': [8.2275, 46.8182], '新西兰': [174.8859, -40.9006]
     };
 
     function shortName(name) { if (!name) return ''; return name.trim().replace(/省|市|区|县|自治区|特别行政区|壮族|回族|维吾尔/g, ''); }
@@ -380,8 +392,13 @@
             const cityName = p.city || p.province || '未知';
             const cityShort = shortName(cityName);
             if (!cityMap[cityShort]) {
-                const coord = cityCoords[cityShort] || cityCoords[shortName(p.province)] || [0, 0];
-                if (p.country !== '中国' && coord[0] === 0 && coord[1] === 0) return;
+                let coord = cityCoords[cityShort] || cityCoords[shortName(p.province)] || [0, 0];
+                // 如果仍然没有坐标，尝试用国家中心坐标
+                if ((coord[0] === 0 && coord[1] === 0) && p.country && countryCoords[p.country]) {
+                    coord = countryCoords[p.country];
+                }
+                // 过滤掉无效坐标 [0,0]
+                if (coord[0] === 0 && coord[1] === 0) return;
                 cityMap[cityShort] = { name: cityName, value: coord };
             }
         });
@@ -408,7 +425,11 @@
             if (currentProvinceName && provShort !== targetShort) return;
             const cityName = p.city.trim();
             const cityShort = shortName(cityName);
-            if (!cityMap[cityShort]) cityMap[cityShort] = { name: cityName, value: cityCoords[cityShort] || provinceCoords[targetShort] || [120.15, 30.27], city: cityName };
+            if (!cityMap[cityShort]) {
+                let coord = cityCoords[cityShort] || provinceCoords[targetShort] || [120.15, 30.27];
+                if (coord[0] === 0 && coord[1] === 0) return; // 过滤无效坐标
+                cityMap[cityShort] = { name: cityName, value: coord, city: cityName };
+            }
         });
         return Object.values(cityMap);
     }
@@ -422,7 +443,11 @@
             if (currentCityName && cityShort !== targetShort) return;
             const districtName = p.district.trim();
             const districtShort = shortName(districtName);
-            if (!districtMap[districtShort]) districtMap[districtShort] = { name: districtName, value: districtCoords[districtShort] || cityCoords[targetShort] || [120.15, 30.27], district: districtName };
+            if (!districtMap[districtShort]) {
+                let coord = districtCoords[districtShort] || cityCoords[targetShort] || [120.15, 30.27];
+                if (coord[0] === 0 && coord[1] === 0) return;
+                districtMap[districtShort] = { name: districtName, value: coord, district: districtName };
+            }
         });
         return Object.values(districtMap);
     }
@@ -449,7 +474,6 @@
         return baseStr;
     }
 
-    // 修正后的同学列表渲染：包含自己，自己显示固定心形，不可点击
     function renderClassmatesList(keyword = '') {
         const container = document.getElementById('classmatesList');
         let list = [];
@@ -457,7 +481,7 @@
         const isTeacher = currentUser.role === 'teacher';
 
         allPoints.forEach((p, i) => {
-            // 不再过滤自己，显示所有用户
+            // 不再过滤当前用户，所有人都显示
             if (kw && !p.name.toLowerCase().includes(kw)) return;
             list.push({ ...p, index: i });
         });
@@ -468,31 +492,24 @@
             return;
         }
 
-        container.innerHTML = list.map(u => {
-            const isSelf = u.username === currentUser.username;
-            return `
-                <div class="classmate-item" data-index="${u.index}" onclick="openStudentDetail('${u.username}')">
-                    <div class="classmate-name">${u.name} ${isSelf ? '<span style="font-size:11px;color:#998670;">（自己）</span>' : ''}</div>
-                    <div class="classmate-loc">${u.country} ${u.province||''} ${u.city||''} ${u.district||''}</div>
-                    <div class="classmate-msg">
-                        ${isTeacher ? '<span class="msg-hide-tip">暂无留言</span>' : (u.message||'暂无留言')}
-                    </div>
-                    ${!isTeacher ? `
-                    <div class="like-area" onclick="event.stopPropagation();">
-                        ${isSelf ? `
-                            <span style="color:#c0504d;">❤️</span>
-                        ` : `
-                            <button class="like-btn ${u.is_liked ? 'liked' : ''}" onclick="toggleLike('${u.username}', this)" title="${u.is_liked ? '取消点赞' : '点赞'}">
-                                ${u.is_liked ? '❤️' : '🤍'}
-                            </button>
-                        `}
-                        <span class="like-count">${u.like_count||0}</span>
-                        <span style="margin-left:8px;color:#8b6f4e;">💬 ${u.comment_count||0}</span>
-                    </div>
-                    ` : ''}
+        container.innerHTML = list.map(u => `
+            <div class="classmate-item" data-index="${u.index}" onclick="openStudentDetail('${u.username}')">
+                <div class="classmate-name">${u.name}</div>
+                <div class="classmate-loc">${u.country} ${u.province||''} ${u.city||''} ${u.district||''}</div>
+                <div class="classmate-msg">
+                    ${isTeacher ? '<span class="msg-hide-tip">暂无留言</span>' : (u.message||'暂无留言')}
                 </div>
-            `;
-        }).join('');
+                ${!isTeacher ? `
+                <div class="like-area" onclick="event.stopPropagation();">
+                    <button class="like-btn ${u.is_liked ? 'liked' : ''}" onclick="toggleLike('${u.username}', this)" title="${u.is_liked ? '取消点赞' : '点赞'}">
+                        ${u.is_liked ? '❤️' : '🤍'}
+                    </button>
+                    <span class="like-count">${u.like_count||0}</span>
+                    <span style="margin-left:8px;color:#8b6f4e;">💬 ${u.comment_count||0}</span>
+                </div>
+                ` : ''}
+            </div>
+        `).join('');
     }
 
     function filterClassmates(keyword) { if (searchTimer) clearTimeout(searchTimer); searchTimer = setTimeout(() => renderClassmatesList(keyword), 300); }
@@ -520,12 +537,7 @@
         if (!currentDetailStudent) return;
         const s = currentDetailStudent;
         const container = document.getElementById('detailLikeArea');
-        const isSelf = s.username === currentUser.username;
-        if (isSelf) {
-            container.innerHTML = `<span style="color:#c0504d;font-size:16px;">❤️</span> <span class="like-count">${s.like_count||0}</span>`;
-        } else {
-            container.innerHTML = `<button class="like-btn ${s.is_liked ? 'liked' : ''}" onclick="toggleLike('${s.username}', this)" title="${s.is_liked ? '取消点赞' : '点赞'}">${s.is_liked ? '❤️' : '🤍'}</button><span class="like-count">${s.like_count||0}</span>`;
-        }
+        container.innerHTML = `<button class="like-btn ${s.is_liked ? 'liked' : ''}" onclick="toggleLike('${s.username}', this)" title="${s.is_liked ? '取消点赞' : '点赞'}">${s.is_liked ? '❤️' : '🤍'}</button><span class="like-count">${s.like_count||0}</span>`;
     }
 
     function closeStudentDetail() {
@@ -609,7 +621,7 @@
             });
     }
 
-    // 地图相关函数
+    // 修正定位逻辑：增加国家坐标回退
     function locateStudent(student) {
         if (locateTimer) clearTimeout(locateTimer);
         if (highlightTimer) clearTimeout(highlightTimer);
@@ -618,22 +630,38 @@
         const city = student.city || '';
         const district = student.district || '';
         let coord = null, highlightName = '';
-        if (district && districtCoords[shortName(district)]) { coord = districtCoords[shortName(district)]; highlightName = district; }
-        else if (city && cityCoords[shortName(city)]) { coord = cityCoords[shortName(city)]; highlightName = city; }
-        else if (province && provinceCoords[shortName(province)]) { coord = provinceCoords[shortName(province)]; highlightName = province; }
-        else if (cityCoords[shortName(city)]) { coord = cityCoords[shortName(city)]; highlightName = city; }
-        if (!coord) { alert('该同学位置信息不完整，无法定位'); return; }
+        // 优先区县
+        if (district && districtCoords[shortName(district)]) {
+            coord = districtCoords[shortName(district)];
+            highlightName = district;
+        } else if (city && cityCoords[shortName(city)]) {
+            coord = cityCoords[shortName(city)];
+            highlightName = city;
+        } else if (province && provinceCoords[shortName(province)]) {
+            coord = provinceCoords[shortName(province)];
+            highlightName = province;
+        } else if (country && countryCoords[country]) {
+            // 国家中心坐标回退
+            coord = countryCoords[country];
+            highlightName = country;
+        } else {
+            alert('该同学位置信息不完整，无法定位');
+            return;
+        }
 
         if (country !== '中国') {
-            renderWorldMap(); bindWorldClick();
+            renderWorldMap();
+            bindWorldClick();
             locateTimer = setTimeout(() => { mapChart.setOption({ geo: { center: coord, zoom: 3 } }); highlightPoint(shortName(highlightName)); }, 200);
             return;
         }
+
         if (!province) {
             loadChinaMap();
             locateTimer = setTimeout(() => { mapChart.setOption({ geo: { center: coord, zoom: 2 } }); highlightPoint(shortName(highlightName)); }, 500);
             return;
         }
+
         let provAdcode = null;
         for (let fullName in provinceAdcodeMap) {
             if (shortName(fullName) === shortName(province)) { provAdcode = provinceAdcodeMap[fullName]; break; }
