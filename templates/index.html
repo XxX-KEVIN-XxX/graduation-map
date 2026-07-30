@@ -8,7 +8,6 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #f5efe6; font-family: "Songti SC","SimSun","Microsoft YaHei",serif; color: #5a4a35; height: 100vh; overflow: hidden; }
-
         .header { height: 90px; padding: 0 40px; display: flex; align-items: center; justify-content: space-between; background: #fffdf8; border-bottom: 1px solid #e8dccc; }
         .header-left h2 { font-size: 22px; font-weight: 500; letter-spacing: 2px; margin-bottom: 4px; }
         .header-left p { font-size: 13px; color: #998670; }
@@ -16,7 +15,6 @@
         .user-info { color: #7a6a55; }
         .logout-btn { padding: 6px 16px; border: 1px solid #c7b59a; border-radius: 4px; background: transparent; color: #8b6f4e; cursor: pointer; font-family: inherit; transition: all 0.2s; }
         .logout-btn:hover { background: #8b6f4e; color: #fff; }
-
         .main { display: flex; height: calc(100vh - 90px); }
         .map-container { flex: 1; position: relative; background: #f5efe6; }
         #map { width: 100%; height: 100%; }
@@ -28,13 +26,11 @@
         .map-stats .en { font-size: 13px; color: #998670; letter-spacing: 2px; margin-bottom: 6px; }
         .map-stats .cn { font-size: 32px; font-weight: 500; letter-spacing: 4px; }
         .map-stats .count { position: absolute; right: -80px; bottom: 8px; font-size: 20px; color: #c0504d; }
-
         .sidebar { width: 340px; background: #fffdf8; border-left: 1px solid #e8dccc; padding: 24px; overflow-y: auto; }
         .sidebar::-webkit-scrollbar { width: 6px; }
         .sidebar::-webkit-scrollbar-track { background: #f0e6d6; border-radius: 3px; margin: 4px 0; }
         .sidebar::-webkit-scrollbar-thumb { background: #c7b59a; border-radius: 3px; }
         .sidebar::-webkit-scrollbar-thumb:hover { background: #b09d80; }
-
         .tab-bar { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid #e8dccc; padding-bottom: 12px; }
         .tab-item { flex: 1; text-align: center; padding: 8px 0; font-size: 13px; cursor: pointer; border-radius: 4px; color: #998670; transition: all 0.2s; user-select: none; }
         .tab-item.active { background: #f0e6d6; color: #8b6f4e; }
@@ -54,7 +50,6 @@
         .like-btn:hover { transform: scale(1.2); }
         .like-btn.liked { color: #c0504d; }
         .like-count, .comment-count { user-select: none; }
-
         .form-group { margin-bottom: 16px; }
         .form-group label { display: block; font-size: 13px; color: #7a6a55; margin-bottom: 6px; }
         .form-group input, .form-group textarea, .form-group select { width: 100%; padding: 8px 10px; border: 1px solid #d9cbb8; border-radius: 4px; background: #faf7f2; font-size: 13px; color: #5a4a35; outline: none; font-family: inherit; transition: border-color 0.2s; }
@@ -65,7 +60,6 @@
         .save-btn:disabled { opacity: 0.6; cursor: not-allowed; }
         .cancel-btn { width: 100%; padding: 10px; background: transparent; color: #8b6f4e; border: 1px solid #c7b59a; border-radius: 4px; cursor: pointer; font-size: 14px; letter-spacing: 2px; font-family: inherit; margin-top: 8px; transition: background 0.2s; }
         .cancel-btn:hover { background: #f0e6d6; }
-
         .user-list { margin-top: 10px; }
         .user-item { padding: 12px; border: 1px solid #e8dccc; border-radius: 6px; margin-bottom: 10px; background: #faf7f2; }
         .user-item .name-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
@@ -77,14 +71,12 @@
         .user-item button:hover { background: #f0e6d6; }
         .add-user-btn { width: 100%; padding: 10px; border: 1px dashed #c7b59a; background: transparent; color: #8b6f4e; border-radius: 4px; cursor: pointer; font-family: inherit; margin-bottom: 16px; transition: all 0.2s; }
         .add-user-btn:hover { background: #f0e6d6; border-style: solid; }
-
         .modal-mask { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: none; z-index: 9999; }
         .modal-content { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); background: #fffdf8; padding: 24px; border-radius: 8px; width: 420px; max-height: 85vh; overflow-y: auto; box-shadow: 0 4px 20px rgba(0,0,0,0.15); z-index: 10000; }
         .modal-title { font-size: 18px; font-weight: 500; margin-bottom: 20px; color: #5a4a35; text-align: center; letter-spacing: 2px; }
         .modal-btns { display: flex; gap: 12px; margin-top: 8px; }
         .modal-btns button { flex: 1; }
         .form-tip { font-size: 12px; color: #998670; margin-top: -4px; margin-bottom: 8px; }
-
         .detail-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
         .detail-name { font-size: 18px; font-weight: 500; }
         .detail-loc { font-size: 13px; color: #998670; margin-bottom: 12px; }
@@ -103,14 +95,12 @@
         .comment-input-area button { padding: 0 12px; background: #8b6f4e; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-family: inherit; font-size: 13px; }
         .comment-input-area button:disabled { opacity: 0.6; cursor: not-allowed; }
 
-        /* 手机竖屏 */
         @media screen and (max-width: 768px) {
             .header { height: 70px; padding: 0 15px; flex-wrap: wrap; }
             .header-left h2 { font-size: 16px; letter-spacing: 1px; }
             .header-left p { font-size: 11px; }
             .header-right { font-size: 12px; gap: 10px; }
             .logout-btn { padding: 4px 10px; font-size: 12px; }
-
             .main { flex-direction: column; height: calc(100vh - 70px); }
             .map-container { height: 50vh; flex: none; }
             .sidebar { width: 100%; height: 50vh; border-left: none; border-top: 1px solid #e8dccc; padding: 12px; }
@@ -118,30 +108,24 @@
             .map-stats .cn { font-size: 22px; }
             .map-stats .count { right: -50px; bottom: 4px; font-size: 16px; }
             .map-stats .en { font-size: 11px; }
-
             .modal-content { width: 90vw !important; max-height: 90vh; padding: 16px; }
             .detail-header .detail-name { font-size: 16px; }
             .tab-item { font-size: 12px; }
         }
-
-        /* 手机横屏 */
         @media screen and (max-width: 768px) and (orientation: landscape) {
             .header { height: 50px; padding: 0 10px; }
             .header-left h2 { font-size: 14px; }
             .header-left p { font-size: 10px; }
             .header-right { font-size: 11px; gap: 8px; }
             .logout-btn { padding: 3px 8px; font-size: 11px; }
-
             .main { flex-direction: row; height: calc(100vh - 50px); }
             .map-container { height: 100%; flex: 1; }
             .sidebar { width: 45%; height: 100%; border-top: none; border-left: 1px solid #e8dccc; padding: 10px; font-size: 12px; }
-
             .map-back-btn { top: 10px; left: 10px; padding: 4px 10px; font-size: 12px; }
             .map-stats { bottom: 10px; left: 10px; }
             .map-stats .cn { font-size: 18px; }
             .map-stats .count { right: -40px; bottom: 2px; font-size: 14px; }
             .map-stats .en { font-size: 10px; }
-
             .tab-bar { margin-bottom: 12px; padding-bottom: 8px; }
             .tab-item { padding: 6px 0; font-size: 11px; }
             .search-box input { padding: 6px 10px; font-size: 12px; }
@@ -151,7 +135,6 @@
             .classmate-msg { font-size: 10px; }
             .like-area { font-size: 11px; gap: 4px; margin-top: 6px; }
             .like-btn { font-size: 14px; }
-
             .modal-content { width: 80vw !important; max-height: 90vh; padding: 12px; font-size: 12px; }
             .detail-name { font-size: 15px; }
             .comment-content { font-size: 11px; }
@@ -466,6 +449,7 @@
         return baseStr;
     }
 
+    // 修正后的同学列表渲染：包含自己，自己显示固定心形，不可点击
     function renderClassmatesList(keyword = '') {
         const container = document.getElementById('classmatesList');
         let list = [];
@@ -473,10 +457,9 @@
         const isTeacher = currentUser.role === 'teacher';
 
         allPoints.forEach((p, i) => {
-            if (p.username !== currentUser.username) {
-                if (kw && !p.name.toLowerCase().includes(kw)) return;
-                list.push({ ...p, index: i });
-            }
+            // 不再过滤自己，显示所有用户
+            if (kw && !p.name.toLowerCase().includes(kw)) return;
+            list.push({ ...p, index: i });
         });
         list.sort((a, b) => (b.like_count || 0) - (a.like_count || 0));
 
@@ -485,24 +468,31 @@
             return;
         }
 
-        container.innerHTML = list.map(u => `
-            <div class="classmate-item" data-index="${u.index}" onclick="openStudentDetail('${u.username}')">
-                <div class="classmate-name">${u.name}</div>
-                <div class="classmate-loc">${u.country} ${u.province||''} ${u.city||''} ${u.district||''}</div>
-                <div class="classmate-msg">
-                    ${isTeacher ? '<span class="msg-hide-tip">暂无留言</span>' : (u.message||'暂无留言')}
+        container.innerHTML = list.map(u => {
+            const isSelf = u.username === currentUser.username;
+            return `
+                <div class="classmate-item" data-index="${u.index}" onclick="openStudentDetail('${u.username}')">
+                    <div class="classmate-name">${u.name} ${isSelf ? '<span style="font-size:11px;color:#998670;">（自己）</span>' : ''}</div>
+                    <div class="classmate-loc">${u.country} ${u.province||''} ${u.city||''} ${u.district||''}</div>
+                    <div class="classmate-msg">
+                        ${isTeacher ? '<span class="msg-hide-tip">暂无留言</span>' : (u.message||'暂无留言')}
+                    </div>
+                    ${!isTeacher ? `
+                    <div class="like-area" onclick="event.stopPropagation();">
+                        ${isSelf ? `
+                            <span style="color:#c0504d;">❤️</span>
+                        ` : `
+                            <button class="like-btn ${u.is_liked ? 'liked' : ''}" onclick="toggleLike('${u.username}', this)" title="${u.is_liked ? '取消点赞' : '点赞'}">
+                                ${u.is_liked ? '❤️' : '🤍'}
+                            </button>
+                        `}
+                        <span class="like-count">${u.like_count||0}</span>
+                        <span style="margin-left:8px;color:#8b6f4e;">💬 ${u.comment_count||0}</span>
+                    </div>
+                    ` : ''}
                 </div>
-                ${!isTeacher ? `
-                <div class="like-area" onclick="event.stopPropagation();">
-                    <button class="like-btn ${u.is_liked ? 'liked' : ''}" onclick="toggleLike('${u.username}', this)" title="${u.is_liked ? '取消点赞' : '点赞'}">
-                        ${u.is_liked ? '❤️' : '🤍'}
-                    </button>
-                    <span class="like-count">${u.like_count||0}</span>
-                    <span style="margin-left:8px;color:#8b6f4e;">💬 ${u.comment_count||0}</span>
-                </div>
-                ` : ''}
-            </div>
-        `).join('');
+            `;
+        }).join('');
     }
 
     function filterClassmates(keyword) { if (searchTimer) clearTimeout(searchTimer); searchTimer = setTimeout(() => renderClassmatesList(keyword), 300); }
@@ -530,7 +520,12 @@
         if (!currentDetailStudent) return;
         const s = currentDetailStudent;
         const container = document.getElementById('detailLikeArea');
-        container.innerHTML = `<button class="like-btn ${s.is_liked ? 'liked' : ''}" onclick="toggleLike('${s.username}', this)" title="${s.is_liked ? '取消点赞' : '点赞'}">${s.is_liked ? '❤️' : '🤍'}</button><span class="like-count">${s.like_count||0}</span>`;
+        const isSelf = s.username === currentUser.username;
+        if (isSelf) {
+            container.innerHTML = `<span style="color:#c0504d;font-size:16px;">❤️</span> <span class="like-count">${s.like_count||0}</span>`;
+        } else {
+            container.innerHTML = `<button class="like-btn ${s.is_liked ? 'liked' : ''}" onclick="toggleLike('${s.username}', this)" title="${s.is_liked ? '取消点赞' : '点赞'}">${s.is_liked ? '❤️' : '🤍'}</button><span class="like-count">${s.like_count||0}</span>`;
+        }
     }
 
     function closeStudentDetail() {
